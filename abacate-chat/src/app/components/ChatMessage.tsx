@@ -22,7 +22,7 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
       </Avatar>
 
       <div
-        className={`flex flex-col min-w-[250px] max-w-[500px] ${
+        className={`flex flex-col max-w-[500px] ${
           isUser ? "items-end" : "items-start"
         }`}
       >

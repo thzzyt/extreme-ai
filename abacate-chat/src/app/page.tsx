@@ -14,7 +14,7 @@ const Index = () => {
             <ChatBrand />
           </div>
         ) : null}
-        <div className="w-full max-w-2xl flex flex-col flex-1 overflow-hidden">
+        <div className="w-full max-w-3xl flex flex-col flex-1 overflow-hidden">
           <ChatInterface />
         </div>
       </div>

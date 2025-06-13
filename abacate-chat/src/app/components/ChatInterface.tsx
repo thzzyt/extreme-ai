@@ -21,18 +21,16 @@ export const ChatInterface = () => {
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isCopied, setIsCopied] = useState(false);
 
-  // Auto-scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Scroll on new messages
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector(
-        "[data-radix-scroll-area-viewport]"
-      );
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
-      }
-    }
+    scrollToBottom();
   }, [messages]);
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -78,23 +76,12 @@ export const ChatInterface = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
         <div className="space-y-1">
-          <AnimatePresence mode="popLayout" initial={false}>
-            {messages.map((message) => (
-              <motion.div
-                key={message.id}
-                layoutId={message.id}
-                variants={messageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={{ type: "spring", duration: 0.4 }}
-              >
-                <ChatMessage message={message} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
+          {messages.map((message) => (
+            <ChatMessage key={message.id} message={message} />
+          ))}
+          <div ref={messagesEndRef} /> {/* Scroll anchor */}
         </div>
       </div>
 
