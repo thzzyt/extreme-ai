@@ -15,19 +15,19 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
     <div
       className={`flex gap-3 p-4 ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
-      <Avatar className="w-8 h-8 flex-shrink-0">
+      <Avatar className="w-8 h-8 flex-shrink-0 bg-green-100">
         <AvatarFallback className={isUser ? "user-message-bg" : "bg-secondary"}>
           {isUser ? <User className="w-4 h-4" /> : <ChatLogo />}
         </AvatarFallback>
       </Avatar>
 
       <div
-        className={`flex flex-col max-w-[80%] ${
+        className={`flex flex-col min-w-[250px] max-w-[500px] ${
           isUser ? "items-end" : "items-start"
         }`}
       >
         <div
-          className={`px-2 py-2 rounded-2xl shadow-sm bg-red-100 w-full ${
+          className={`px-2 py-2 rounded-2xl shadow-sm w-full ${
             isUser
               ? "user-message-bg rounded-br-md"
               : "bot-message-bg border rounded-bl-md"

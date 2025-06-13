@@ -6,7 +6,6 @@ import { Send, Loader2, Copy, Check } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { Textarea } from "./ui/textarea";
 import { useChat } from "../hooks/use-chat";
-import { ScrollArea } from "./ui/scroll-area";
 import { Button } from "./ui/button";
 
 export const ChatInterface = () => {
@@ -79,8 +78,8 @@ export const ChatInterface = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <ScrollArea ref={scrollAreaRef} className="flex-1">
-        <div className="space-y-1 bg-red-100">
+      <div className="flex-1 overflow-auto">
+        <div className="space-y-1">
           <AnimatePresence mode="popLayout" initial={false}>
             {messages.map((message) => (
               <motion.div
@@ -97,7 +96,7 @@ export const ChatInterface = () => {
             ))}
           </AnimatePresence>
         </div>
-      </ScrollArea>
+      </div>
 
       <div className="bg-card p-4 space-y-4">
         <AnimatePresence>
