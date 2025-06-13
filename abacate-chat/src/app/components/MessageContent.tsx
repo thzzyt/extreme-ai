@@ -15,7 +15,7 @@ export const MessageContent = ({ content }: MessageContentProps) => {
   }
 
   return (
-    <div className="text-sm font-normal leading-relaxed break-words">
+    <div className="text-sm font-normal leading-relaxed break-words overflow-hidden">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>

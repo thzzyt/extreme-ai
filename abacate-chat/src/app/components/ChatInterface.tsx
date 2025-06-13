@@ -80,7 +80,7 @@ export const ChatInterface = () => {
   return (
     <div className="flex flex-col h-full">
       <ScrollArea ref={scrollAreaRef} className="flex-1">
-        <div className="space-y-1">
+        <div className="space-y-1 bg-red-100">
           <AnimatePresence mode="popLayout" initial={false}>
             {messages.map((message) => (
               <motion.div

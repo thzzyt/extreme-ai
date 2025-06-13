@@ -27,7 +27,7 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
         }`}
       >
         <div
-          className={`px-4 py-2 rounded-2xl shadow-sm w-full overflow-hidden ${
+          className={`px-2 py-2 rounded-2xl shadow-sm bg-red-100 w-full ${
             isUser
               ? "user-message-bg rounded-br-md"
               : "bot-message-bg border rounded-bl-md"
