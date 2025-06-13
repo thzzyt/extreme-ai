@@ -13,7 +13,7 @@ export const CodeBlock = ({
 }: CodeBlockProps) => {
   if (isInline) {
     return (
-      <code className="bg-background/50 px-1 rounded text-black dark:text-white whitespace-nowrap">
+      <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono text-sm text-slate-800 dark:text-slate-200">
         {code}
       </code>
     );
@@ -22,15 +22,17 @@ export const CodeBlock = ({
   return (
     <Highlight code={code.replace(/\n$/, "")} language={language}>
       {({ tokens, getLineProps, getTokenProps }) => (
-        <code className="block text-black dark:text-white overflow-x-auto">
-          {tokens.map((line, i) => (
-            <div key={i} {...getLineProps({ line })}>
-              {line.map((token, key) => (
-                <span key={key} {...getTokenProps({ token })} />
-              ))}
-            </div>
-          ))}
-        </code>
+        <pre className="p-4 rounded-lg bg-[#181818] dark:bg-slate-800 font-mono text-sm leading-6">
+          <code className="block text-slate-900 dark:text-slate-50 overflow-x-auto">
+            {tokens.map((line, i) => (
+              <div key={i} {...getLineProps({ line })}>
+                {line.map((token, key) => (
+                  <span key={key} {...getTokenProps({ token })} />
+                ))}
+              </div>
+            ))}
+          </code>
+        </pre>
       )}
     </Highlight>
   );

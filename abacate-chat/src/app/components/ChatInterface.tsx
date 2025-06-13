@@ -136,7 +136,7 @@ export const ChatInterface = () => {
             placeholder="Quero integrar a AbacatePay com..."
             disabled={isLoading}
             rows={1}
-            className="flex-1 min-h-[40px] max-h-[250px] text-md chat-input-bg focus:ring-primary resize-none [overflow-y:hidden] [&::-webkit-scrollbar]:hidden"
+            className="flex-1 min-h-[40px] max-h-[250px] chat-input-bg focus:ring-primary resize-none [overflow-y:hidden] [&::-webkit-scrollbar]:hidden"
             style={{
               overflowY:
                 textareaRef.current?.scrollHeight ?? 0 > 250
