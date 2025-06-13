@@ -5,6 +5,7 @@ import {
   ContinueChatSchema,
 } from "./schemas/ChatControllerSchema";
 import { validateSchema } from "./schemas/validateSchema";
+import { RateLimitedStream } from "../pkg/stream/RateLimitedStream";
 
 export class ChatController {
   private router: Router;
@@ -122,7 +123,8 @@ export class ChatController {
     res: Response,
     stream: AsyncGenerator<string, void, unknown>
   ) {
-    for await (const chunk of stream) {
+    const rateLimitedStream = new RateLimitedStream(25); // 3 words per second
+    for await (const chunk of rateLimitedStream.process(stream)) {
       res.write(
         `data: ${JSON.stringify({ type: "content", content: chunk })}\n\n`
       );
