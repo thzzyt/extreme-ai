@@ -1,0 +1,990 @@
+Directory structure:
+└── abacatepay-abacatepay-go-sdk/
+    ├── README.md
+    ├── abacatepay/
+    │   ├── client.go
+    │   └── client_test.go
+    ├── examples/
+    │   └── billing/
+    │       └── main.go
+    ├── internal/
+    │   └── pkg/
+    │       └── fetch/
+    │           ├── fetch.go
+    │           └── fetch_test.go
+    └── v1/
+        └── billing/
+            ├── billing.go
+            ├── billing_test.go
+            ├── dto.go
+            ├── frequency.go
+            └── method.go
+
+================================================
+FILE: README.md
+================================================
+# abacatepay-go-sdk
+
+## Installation
+
+```bash
+go get github.com/AbacatePay/abacatepay-go-sdk
+```
+
+## Usage
+
+```go
+package main
+
+import (
+	"context"
+	"github.com/AbacatePay/abacatepay-go-sdk/abacatepay"
+	"github.com/AbacatePay/abacatepay-go-sdk/v1/billing"
+	"log"
+	"time"
+)
+
+func main() {
+	client, err := abacatepay.New(&abacatepay.ClientConfig{
+		ApiKey:  "abc_dev",
+		Timeout: 10 * time.Second,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	//create a new billing
+	body := &billing.CreateBillingBody{
+		Frequency:     billing.OneTime,
+		Methods:       []billing.Method{billing.PIX},
+		CompletionUrl: "https://example.com/completion",
+		ReturnUrl:     "https://example.com/return",
+		Products: []*billing.BillingProduct{
+			{
+				ExternalId:  "pix-1234",
+				Name:        "Example Product",
+				Description: "Example product description",
+				Quantity:    1,
+				Price:       100,
+			},
+		},
+		Customer: &billing.BillingCustomer{
+			Email: "test@example.com",
+		},
+	}
+
+	ctx := context.Background()
+	createResponse, err := client.Billing.Create(ctx, body)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Println(createResponse)
+
+	// list all billings
+	billings, err := client.Billing.ListAll(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Println(billings.Data)
+}
+```
+
+## Documentation
+
+[https://abacatepay.readme.io](https://abacatepay.readme.io)
+
+## License
+
+MIT
+
+
+
+================================================
+FILE: abacatepay/client.go
+================================================
+package abacatepay
+
+import (
+	"errors"
+	"os"
+	"time"
+
+	"github.com/AbacatePay/abacatepay-go-sdk/internal/pkg/fetch"
+	"github.com/AbacatePay/abacatepay-go-sdk/v1/billing"
+)
+
+const Version = "v0.1.0"
+
+const DefaultTimeout = 500 * time.Millisecond
+
+type Client struct {
+	httpClient *fetch.Fetch
+	Billing    *billing.Billing
+}
+
+type ClientConfig struct {
+	Url     string
+	ApiKey  string
+	Timeout time.Duration
+}
+
+type RequestOptions struct {
+	Timeout time.Duration
+	Headers map[string]string
+}
+
+var (
+	ErrInvalidAPIKey = errors.New("invalid API key")
+)
+
+func New(config *ClientConfig) (*Client, error) {
+	if config == nil || config.ApiKey == "" {
+		return nil, ErrInvalidAPIKey
+	}
+
+	apiUrl := os.Getenv("ABACATEPAY_API_URL")
+	if config.Url != "" {
+		apiUrl = config.Url
+	}
+	if apiUrl == "" {
+		apiUrl = "https://api.abacatepay.com"
+	}
+
+	timeout := config.Timeout
+	if timeout == 0 {
+		timeout = DefaultTimeout
+	}
+
+	httpClient, err := fetch.New(config.ApiKey, apiUrl, Version, timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Client{
+		httpClient: httpClient,
+		Billing:    billing.New(httpClient),
+	}, nil
+}
+
+
+
+================================================
+FILE: abacatepay/client_test.go
+================================================
+package abacatepay_test
+
+import (
+	"github.com/AbacatePay/abacatepay-go-sdk/abacatepay"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestNew(t *testing.T) {
+	t.Run("Create new client with valid params", func(t *testing.T) {
+		cl, err := abacatepay.New(&abacatepay.ClientConfig{
+			ApiKey:  "test-key",
+			Timeout: 10 * time.Second,
+		})
+		assert.NoError(t, err)
+		assert.NotNil(t, cl)
+	})
+
+	t.Run("Error if API key is empty", func(t *testing.T) {
+		cl, err := abacatepay.New(&abacatepay.ClientConfig{
+			ApiKey:  "",
+			Timeout: 10 * time.Second,
+		})
+		assert.Error(t, err)
+		assert.ErrorIs(t, abacatepay.ErrInvalidAPIKey, err)
+		assert.Nil(t, cl)
+	})
+}
+
+
+
+================================================
+FILE: examples/billing/main.go
+================================================
+package main
+
+import (
+	"context"
+	"github.com/AbacatePay/abacatepay-go-sdk/abacatepay"
+	"github.com/AbacatePay/abacatepay-go-sdk/v1/billing"
+	"log"
+	"time"
+)
+
+func main() {
+	client, err := abacatepay.New(&abacatepay.ClientConfig{
+		ApiKey:  "abc_dev",
+		Timeout: 10 * time.Second,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	//create a new billing
+	body := &billing.CreateBillingBody{
+		Frequency:     billing.OneTime,
+		Methods:       []billing.Method{billing.PIX},
+		CompletionUrl: "https://example.com/completion",
+		ReturnUrl:     "https://example.com/return",
+		Products: []*billing.BillingProduct{
+			{
+				ExternalId:  "pix-1234",
+				Name:        "Example Product",
+				Description: "Example product description",
+				Quantity:    1,
+				Price:       100,
+			},
+		},
+		Customer: &billing.BillingCustomer{
+			Email: "test@example.com",
+		},
+	}
+
+	ctx := context.Background()
+	createResponse, err := client.Billing.Create(ctx, body)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Println(createResponse)
+
+	// list all billings
+	billings, err := client.Billing.ListAll(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Println(billings.Data)
+}
+
+
+
+================================================
+FILE: internal/pkg/fetch/fetch.go
+================================================
+package fetch
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
+)
+
+var (
+	ErrInvalidAPIKey = errors.New("invalid API key")
+	ErrInvalidAPIUrl = errors.New("invalid API url")
+)
+
+type Fetch struct {
+	apiKey  string
+	apiUrl  string
+	version string
+	timeout time.Duration
+}
+
+type RequestOptions struct {
+	Timeout time.Duration
+	Headers map[string]string
+}
+
+func New(apiKey, apiUrl, version string, timeout time.Duration) (*Fetch, error) {
+	if apiKey == "" {
+		return nil, ErrInvalidAPIKey
+	}
+
+	if apiUrl == "" {
+		return nil, ErrInvalidAPIUrl
+	}
+
+	return &Fetch{
+		apiKey:  apiKey,
+		apiUrl:  apiUrl,
+		version: version,
+		timeout: timeout,
+	}, nil
+}
+
+func (f *Fetch) Request(ctx context.Context, method, endpoint string, body interface{}, opts ...RequestOptions) (*http.Response, error) {
+	url := fmt.Sprintf("%s%s", f.apiUrl, endpoint)
+
+	var reqBody io.Reader
+	if body != nil {
+		jsonBody, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("error on serializing request body: %v", err)
+		}
+		reqBody = bytes.NewBuffer(jsonBody)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("error on creating request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", f.apiKey))
+	req.Header.Set("User-Agent", fmt.Sprintf("AbacatePay-Go-SDK/%s", f.version))
+
+	var timeout time.Duration = f.timeout
+
+	if len(opts) > 0 {
+		opt := opts[0]
+
+		if opt.Timeout > 0 {
+			timeout = opt.Timeout
+		}
+
+		for k, v := range opt.Headers {
+			req.Header.Set(k, v)
+		}
+	}
+
+	client := &http.Client{
+		Timeout: timeout,
+	}
+
+	return client.Do(req)
+}
+
+func (f *Fetch) Get(ctx context.Context, endpoint string, opts ...RequestOptions) (*http.Response, error) {
+	return f.Request(ctx, http.MethodGet, endpoint, nil, opts...)
+}
+
+func (f *Fetch) Post(ctx context.Context, endpoint string, body interface{}, opts ...RequestOptions) (*http.Response, error) {
+	return f.Request(ctx, http.MethodPost, endpoint, body, opts...)
+}
+
+func (f *Fetch) Put(ctx context.Context, endpoint string, body interface{}, opts ...RequestOptions) (*http.Response, error) {
+	return f.Request(ctx, http.MethodPut, endpoint, body, opts...)
+}
+
+func (f *Fetch) Delete(ctx context.Context, endpoint string, opts ...RequestOptions) (*http.Response, error) {
+	return f.Request(ctx, http.MethodDelete, endpoint, nil, opts...)
+}
+
+func ParseResponse(resp *http.Response, target interface{}) error {
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("error on reading response body: %v", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("error on request: status %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	if target != nil {
+		if err := json.Unmarshal(body, target); err != nil {
+			return fmt.Errorf("error on deserializing response: %v", err)
+		}
+	}
+
+	return nil
+}
+
+
+
+================================================
+FILE: internal/pkg/fetch/fetch_test.go
+================================================
+package fetch_test
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/AbacatePay/abacatepay-go-sdk/internal/pkg/fetch"
+)
+
+type TestResponse struct {
+	Message string `json:"message"`
+}
+
+func TestNewFetchClient(t *testing.T) {
+	t.Run("Create new client with valid params", func(t *testing.T) {
+		client, err := fetch.New("test-key", "https://api.test.com", "1.0.0", 10)
+		assert.NotNil(t, client)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Return error if API key is empty", func(t *testing.T) {
+		_, err := fetch.New("", "https://api.test.com", "1.0.0", 10)
+		assert.Error(t, err)
+		assert.ErrorIs(t, fetch.ErrInvalidAPIKey, err)
+	})
+
+	t.Run("Panic if API url is empty", func(t *testing.T) {
+		_, err := fetch.New("test-key", "", "1.0.0", 10)
+		assert.Error(t, err)
+		assert.ErrorIs(t, fetch.ErrInvalidAPIUrl, err)
+	})
+}
+
+func TestFetchMethods(t *testing.T) {
+	t.Run("Have GET method", func(t *testing.T) {
+		ctx := context.Background()
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodGet, r.Method)
+			assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+			resp := TestResponse{Message: "Success"}
+			json.NewEncoder(w).Encode(resp)
+		}))
+
+		defer server.Close()
+
+		client, err := fetch.New("test-key", server.URL, "1.0.0", 10*time.Second)
+		assert.NoError(t, err)
+
+		var response *http.Response
+		response, err = client.Get(ctx, "/test")
+
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+
+	t.Run("Have DELETE method", func(t *testing.T) {
+		ctx := context.Background()
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodDelete, r.Method)
+			assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+			resp := TestResponse{Message: "Success"}
+			json.NewEncoder(w).Encode(resp)
+		}))
+
+		defer server.Close()
+
+		client, err := fetch.New("test-key", server.URL, "1.0.0", 10*time.Second)
+		assert.NoError(t, err)
+
+		var response *http.Response
+		response, err = client.Delete(ctx, "/test/xpto")
+
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+
+	t.Run("Have POST method", func(t *testing.T) {
+		ctx := context.Background()
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodPost, r.Method)
+			assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+			resp := TestResponse{Message: "Success"}
+			json.NewEncoder(w).Encode(resp)
+		}))
+
+		defer server.Close()
+
+		client, err := fetch.New("test-key", server.URL, "1.0.0", 10*time.Second)
+		assert.NoError(t, err)
+
+		var response *http.Response
+
+		response, err = client.Post(ctx, "/test/xpto", TestResponse{Message: "Success"})
+
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+
+	t.Run("Have PUT method", func(t *testing.T) {
+		ctx := context.Background()
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodPut, r.Method)
+			assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+			resp := TestResponse{Message: "Success"}
+			json.NewEncoder(w).Encode(resp)
+		}))
+
+		defer server.Close()
+
+		client, err := fetch.New("test-key", server.URL, "1.0.0", 10*time.Second)
+		assert.NoError(t, err)
+
+		var response *http.Response
+
+		response, err = client.Put(ctx, "/test/xpto", TestResponse{Message: "Success"})
+
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+}
+
+func TestParseResponse(t *testing.T) {
+	t.Run("Parse response with success", func(t *testing.T) {
+		resp := &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(bytes.NewBufferString(`{"message": "Success"}`)),
+		}
+
+		var result TestResponse
+		err := fetch.ParseResponse(resp, &result)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "Success", result.Message)
+	})
+
+	t.Run("Error on invalid status code", func(t *testing.T) {
+		resp := &http.Response{
+			StatusCode: 400,
+			Body:       io.NopCloser(bytes.NewBufferString(`{"error": "Bad Request"}`)),
+		}
+
+		var result TestResponse
+		err := fetch.ParseResponse(resp, &result)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "error on request: status 400")
+	})
+
+	t.Run("Error with invalid JSON", func(t *testing.T) {
+		resp := &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(bytes.NewBufferString(`{"invalid": json}`)),
+		}
+
+		var result TestResponse
+		err := fetch.ParseResponse(resp, &result)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "error on deserializing response")
+	})
+}
+
+func TestRequestOptions(t *testing.T) {
+	t.Run("Configure custom timeout", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			json.NewEncoder(w).Encode(TestResponse{Message: "Success"})
+		}))
+
+		defer server.Close()
+
+		client, err := fetch.New("test-key", server.URL, "1.0.0", 10*time.Second)
+		assert.NoError(t, err)
+		opts := fetch.RequestOptions{
+			Timeout: 5 * time.Second,
+			Headers: map[string]string{
+				"X-Custom-Header": "test-value",
+			},
+		}
+
+		response, err := client.Get(context.Background(), "/test", opts)
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+}
+
+
+
+================================================
+FILE: v1/billing/billing.go
+================================================
+package billing
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/AbacatePay/abacatepay-go-sdk/internal/pkg/fetch"
+)
+
+type Billing struct {
+	HttpClient *fetch.Fetch
+}
+
+func New(httpClient *fetch.Fetch) *Billing {
+	return &Billing{
+		HttpClient: httpClient,
+	}
+}
+
+func (b *Billing) Create(
+	ctx context.Context,
+	body *CreateBillingBody,
+) (*CreateBillingResponse, error) {
+	if err := body.Validate(); err != nil {
+		return nil, err
+	}
+
+	if body.CustomerId == "" && (body.Customer == nil || body.Customer.Email == "") {
+		return nil, fmt.Errorf("customerId or customer.email is required")
+	}
+
+	var response CreateBillingResponse
+
+	resp, err := b.HttpClient.Post(ctx, "/v1/billing/create", body)
+	if err != nil {
+		return nil, err
+	}
+
+	err = fetch.ParseResponse(resp, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
+}
+
+func (b *Billing) ListAll(ctx context.Context) (*ListBillingResponse, error) {
+	var response ListBillingResponse
+
+	resp, err := b.HttpClient.Get(ctx, "/v1/billing/list")
+	if err != nil {
+		return nil, err
+	}
+
+	err = fetch.ParseResponse(resp, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
+}
+
+
+
+================================================
+FILE: v1/billing/billing_test.go
+================================================
+package billing_test
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/AbacatePay/abacatepay-go-sdk/internal/pkg/fetch"
+	"github.com/AbacatePay/abacatepay-go-sdk/v1/billing"
+)
+
+func TestNew(t *testing.T) {
+	t.Run("Create new client with valid params", func(t *testing.T) {
+		client := billing.New(nil)
+		assert.NotNil(t, client)
+	})
+}
+
+func TestCreate(t *testing.T) {
+	t.Run("Should validate body", func(t *testing.T) {
+		client := billing.New(nil)
+
+		body := &billing.CreateBillingBody{
+			Frequency:     billing.OneTime,
+			Methods:       []billing.Method{billing.PIX},
+			CompletionUrl: "https://example.com/completion",
+		}
+
+		ctx := context.Background()
+
+		response, err := client.Create(ctx, body)
+
+		assert.Error(t, err)
+		assert.Nil(t, response)
+	})
+
+	t.Run("Should create new billing", func(t *testing.T) {
+		body := &billing.CreateBillingBody{
+			Frequency:     billing.OneTime,
+			Methods:       []billing.Method{billing.PIX},
+			CompletionUrl: "https://example.com/completion",
+			ReturnUrl:     "https://example.com/return",
+			Products: []*billing.BillingProduct{
+				{
+					ExternalId:  "pix-1234",
+					Name:        "PIX",
+					Description: "PIX",
+					Quantity:    1,
+					Price:       100,
+				},
+			},
+		}
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var bodyRef billing.CreateBillingBody
+
+			assert.Equal(t, http.MethodPost, r.Method)
+			assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+			assert.Equal(t, "/v1/billing/create", r.URL.Path)
+
+			defer r.Body.Close()
+
+			json.NewDecoder(r.Body).Decode(&bodyRef)
+
+			assert.Equal(t, *body, bodyRef)
+
+			resp := billing.CreateBillingResponse{
+				Data: billing.CreateBillingResponseItem{
+					PublicID: "pix-1234",
+					Products: []billing.ProductItem{},
+				},
+			}
+
+			json.NewEncoder(w).Encode(resp)
+		}))
+
+		client, err := fetch.New("test-key", server.URL, "1.0.0", 10*time.Second)
+		assert.NoError(t, err)
+
+		b := billing.New(client)
+
+		ctx := context.Background()
+
+		response, err := b.Create(ctx, body)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Data)
+	})
+}
+
+func TestListAll(t *testing.T) {
+	t.Run("Should list all billings", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodGet, r.Method)
+			assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+			assert.Equal(t, "/v1/billing/list", r.URL.Path)
+
+			resp := billing.ListBillingResponse{
+				Data: []billing.BillingListItem{
+					{
+						ID:        "pix-1234",
+						Metadata:  billing.Metadata{},
+						PublicID:  "pix-1234",
+						Amount:    0,
+						Status:    "",
+						DevMode:   false,
+						Methods:   []billing.Method{},
+						Frequency: "",
+						CreatedAt: time.Now(),
+						UpdatedAt: time.Now(),
+						Version:   0,
+						URL:       "",
+						Products:  []billing.ProductItem{},
+					},
+				},
+			}
+
+			json.NewEncoder(w).Encode(resp)
+		}))
+
+		client, err := fetch.New("test-key", server.URL, "1.0.0", 10*time.Second)
+		assert.NoError(t, err)
+
+		b := billing.New(client)
+
+		ctx := context.Background()
+
+		response, err := b.ListAll(ctx)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Data)
+	})
+}
+
+
+
+================================================
+FILE: v1/billing/dto.go
+================================================
+package billing
+
+import (
+	"time"
+
+	"github.com/go-playground/validator/v10"
+)
+
+var validate *validator.Validate
+
+type CreateBillingBody struct {
+	Frequency     Frequency         `json:"frequency"     validate:"required"`
+	Methods       []Method          `json:"methods"       validate:"required,dive"`
+	ReturnUrl     string            `json:"returnUrl"     validate:"required,url"`
+	CompletionUrl string            `json:"completionUrl" validate:"required,url"`
+	Products      []*BillingProduct `json:"products"      validate:"required,dive"`
+	CustomerId    string            `json:"customerId"`
+	Customer      *BillingCustomer  `json:"customer"`
+}
+
+type BillingCustomer struct {
+	Name      string `json:"name"`
+	Cellphone string `json:"cellphone"`
+	Email     string `json:"email" validate:"required"`
+	TaxID     string `json:"taxId"`
+}
+
+type BillingProduct struct {
+	ExternalId  string `json:"externalId"  validate:"required"`
+	Name        string `json:"name"        validate:"required"`
+	Description string `json:"description"`
+	Quantity    int    `json:"quantity"    validate:"required,gte=1"`
+	Price       int    `json:"price"       validate:"required,gte=100"`
+}
+
+type ProductItem struct {
+	ID         string `json:"id"`
+	ExternalID string `json:"externalId"`
+	Quantity   int    `json:"quantity"`
+}
+
+type CreateBillingResponseItem struct {
+	PublicID  string        `json:"publicId"`
+	Products  []ProductItem `json:"products"`
+	Amount    int64         `json:"amount"`
+	Status    string        `json:"status"`
+	DevMode   bool          `json:"devMode"`
+	Methods   []string      `json:"methods"`
+	Frequency string        `json:"frequency"`
+	Metadata  struct {
+		Fee           int64  `json:"fee"`
+		ReturnURL     string `json:"returnUrl"`
+		CompletionURL string `json:"completionUrl"`
+	} `json:"metadata"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+	ID        string `json:"_id"`
+	Version   int    `json:"__v"`
+	URL       string `json:"url"`
+	BillingID string `json:"id"`
+}
+
+type CreateBillingResponse struct {
+	Data  CreateBillingResponseItem `json:"data"`
+	Error string                    `json:"error"`
+}
+
+type Metadata struct {
+	Fee           int    `json:"fee"`
+	ReturnURL     string `json:"returnUrl"`
+	CompletionURL string `json:"completionUrl"`
+}
+
+type CustomerMetadata struct {
+	Name      string `json:"name"`
+	Cellphone string `json:"cellphone"`
+	TaxID     string `json:"taxId"`
+	Email     string `json:"email"`
+}
+
+// Customer representa o cliente associado a uma cobrança.
+type Customer struct {
+	Metadata  CustomerMetadata `json:"metadata"`
+	ID        string           `json:"_id"`
+	PublicID  string           `json:"publicId"`
+	AccountID string           `json:"accountId"`
+	StoreID   string           `json:"storeId"`
+	DevMode   bool             `json:"devMode"`
+	CreatedAt time.Time        `json:"createdAt"`
+	UpdatedAt time.Time        `json:"updatedAt"`
+	Version   int              `json:"__v"`
+}
+
+type BillingListItem struct {
+	ID       string   `json:"id"`
+	Metadata Metadata `json:"metadata"`
+	Customer struct {
+		ID       string           `json:"id"`
+		Metadata CustomerMetadata `json:"metadata"`
+	} `json:"customer"`
+	CustomerId struct {
+		Metadata  CustomerMetadata `json:"metadata"`
+		ID        string           `json:"id"`
+		PublicID  string           `json:"publicId"`
+		AccountID string           `json:"accountId"`
+		StoreID   string           `json:"storeId"`
+		DevMode   bool             `json:"devMode"`
+		CreatedAt time.Time        `json:"createdAt"`
+		UpdatedAt time.Time        `json:"updatedAt"`
+		Version   int              `json:"__v"`
+	} `json:"customerId"`
+	PublicID  string        `json:"publicId"`
+	Amount    int64         `json:"amount"`
+	Status    string        `json:"status"`
+	DevMode   bool          `json:"devMode"`
+	Methods   []Method      `json:"methods"`
+	Frequency Frequency     `json:"frequency"`
+	CreatedAt time.Time     `json:"createdAt"`
+	UpdatedAt time.Time     `json:"updatedAt"`
+	Version   int           `json:"__v"`
+	URL       string        `json:"url"`
+	Products  []ProductItem `json:"products"`
+}
+
+type ListBillingResponse struct {
+	Data  []BillingListItem `json:"data"`
+	Error string            `json:"error"`
+}
+
+func init() {
+	validate = validator.New()
+}
+
+func (p *CreateBillingBody) Validate() error {
+	return validate.Struct(p)
+}
+
+
+
+================================================
+FILE: v1/billing/frequency.go
+================================================
+package billing
+
+type Frequency string
+
+const (
+	OneTime Frequency = "ONE_TIME"
+)
+
+
+
+================================================
+FILE: v1/billing/method.go
+================================================
+package billing
+
+type Method string
+
+const (
+	PIX Method = "PIX"
+)
+
+

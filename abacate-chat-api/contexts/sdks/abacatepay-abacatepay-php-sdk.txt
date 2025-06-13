@@ -1,0 +1,1640 @@
+Directory structure:
+└── abacatepay-abacatepay-php-sdk/
+    ├── README.md
+    ├── composer.json
+    ├── phpunit.xml
+    ├── SECURITY.md
+    ├── src/
+    │   ├── Clients/
+    │   │   ├── BillingClient.php
+    │   │   ├── Client.php
+    │   │   └── CustomerClient.php
+    │   ├── Enums/
+    │   │   └── Billing/
+    │   │       ├── Frequencies.php
+    │   │       ├── Methods.php
+    │   │       └── Statuses.php
+    │   └── Resources/
+    │       ├── Billing.php
+    │       ├── Customer.php
+    │       ├── Resource.php
+    │       ├── Billing/
+    │       │   ├── Metadata.php
+    │       │   └── Product.php
+    │       └── Customer/
+    │           └── Metadata.php
+    └── tests/
+        ├── Pest.php
+        ├── Client/
+        │   ├── BillingClientTest.php
+        │   └── CustomerClientTest.php
+        └── Mocks/
+            └── Response/
+                ├── Billing/
+                │   ├── create.json
+                │   └── list.json
+                └── Customer/
+                    ├── create.json
+                    └── list.json
+
+================================================
+FILE: README.md
+================================================
+# AbacatePay SDK for PHP
+
+A robust PHP SDK for integrating AbacatePay payment solutions into your applications.
+
+## 📋 Requirements
+
+-   PHP 7.2.5 or higher
+-   Composer
+-   Valid AbacatePay account and API credentials
+-   SSL enabled for production environments
+
+## 💻 Installation
+
+Install the SDK via Composer:
+
+```bash
+composer require abacatepay/php-sdk
+```
+
+## 🔧 Configuration
+
+First, initialize the SDK with your API token:
+
+```php
+use AbacatePay\Clients\Client;
+
+Client::setToken($_ENV["ABACATEPAY_TOKEN"]);
+```
+
+> ⚠️ Never commit your API tokens to version control. Use environment variables instead.
+
+## 🌟 Features
+
+-   Simple billing management
+-   Customer management
+-   Multiple payment methods support
+-   Webhook handling
+-   Secure payment processing
+-   Error handling and logging
+
+## 📘 Usage Examples
+
+### Billing Management
+
+Initialize the Billing Client
+
+```php
+use AbacatePay\Clients\BillingClient;
+
+$billingClient = new BillingClient();
+```
+
+#### List All Billings
+
+```php
+$billings = $billingClient->list();
+```
+
+#### Create a New Billing
+
+```php
+use AbacatePay\Resources\Billing;
+use AbacatePay\Resources\Billing\Product;
+use AbacatePay\Resources\Billing\Metadata as BillingMetadata;
+use AbacatePay\Enums\Billing\Methods;
+use AbacatePay\Enums\Billing\Frequencies;
+use AbacatePay\Resources\Customer;
+use AbacatePay\Resources\Customer\Metadata as CustomerMetadata;
+
+$billing = $billingClient->create(new Billing([
+    'frequency' => Frequencies::ONE_TIME,
+    'methods' => [Methods::PIX],
+    'products' => [
+        new Product([
+            'external_id' => 'abc_123',
+            'name' => 'Product A',
+            'description' => 'Description of product A',
+            'quantity' => 1,
+            'price' => 100 // Price in cents
+        ])
+    ],
+    'metadata' => new BillingMetadata([
+        'return_url' => 'https://www.abacatepay.com',
+        'completion_url' => 'https://www.abacatepay.com'
+    ]),
+    'customer' => new Customer([
+        'metadata' => new CustomerMetadata([
+            'name' => 'John Doe',
+            'cellphone' => '01912341234',
+            'email' => 'john@example.com',
+            'tax_id' => '13827826837'
+        ])
+    ])
+]));
+```
+
+It is also possible to use the ID of an existing customer:
+
+```php
+// ...
+    'customer' => new Customer([
+        'id' => 'abc_123'
+    ])
+// ...
+```
+
+### Customer Management
+
+Initialize the Customer Client
+
+```php
+use AbacatePay\Clients\CustomerClient;
+use AbacatePay\Resources\Customer;
+
+$customerClient = new CustomerClient();
+```
+
+#### List All Customers
+
+```php
+$customers = $customerClient->list();
+```
+
+#### Create a New Customer
+
+```php
+use AbacatePay\Resources\Customer;
+use AbacatePay\Resources\Customer\Metadata;
+
+$customer = $customerClient->create(new Customer([
+    'metadata' => new Metadata([
+        'name' => 'John Doe',
+        'cellphone' => '01912341234',
+        'email' => 'john@example.com',
+        'tax_id' => '13827826837'
+    ])
+]));
+```
+
+## ⚡ Quick Tips
+
+-   Use environment variables for API tokens
+-   Enable error reporting in development
+-   Always validate customer input
+-   Handle exceptions appropriately
+-   Keep the SDK updated
+
+## 🔍 Error Handling
+
+```php
+use AbacatePay\Exceptions\ApiException;
+
+try {
+    $billing = $billingClient->create($billingData);
+} catch (ApiException $e) {
+    // Handle API-specific errors
+    echo $e->getMessage();
+} catch (\Exception $e) {
+    // Handle general errors
+    echo $e->getMessage();
+}
+```
+
+## 📚 Documentation
+
+For detailed API documentation and integration guides:
+
+-   API Reference
+-   Integration Guide
+-   API Status
+
+## 🛠️ Development
+
+### Installing packages
+
+```
+composer install --dev
+```
+
+### Running Tests
+
+```bash
+composer test
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our Contributing Guide for details.
+
+1. Fork the repository
+2. Create your feature branch (git checkout -b feature/amazing-feature)
+3. Commit your changes (git commit -m 'Add amazing feature')
+4. Push to the branch (git push origin feature/amazing-feature)
+5. Open a Pull Request
+
+## 🔒 Security
+
+For security issues, please see our Security Policy.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 💬 Support
+
+-   For SDK issues, open an issue
+-   For API questions, contact ajuda@abacatepay.com
+-   For urgent issues, contact our support team
+
+Made with ❤️ by AbacatePay Community
+
+
+
+================================================
+FILE: composer.json
+================================================
+{
+    "name": "abacatepay/php-sdk",
+    "description": "A robust PHP SDK for integrating AbacatePay payment solutions into your applications.",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "AbacatePay\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Julimar Junior",
+            "email": "julimargomesjr@hotmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.2.5 || ^8.0",
+        "guzzlehttp/guzzle": "^7.9"
+    },
+    "require-dev": {
+        "pestphp/pest": "^3.6"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest"
+    }
+}
+
+
+
+================================================
+FILE: phpunit.xml
+================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.3/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Test Suite">
+            <directory suffix="Test.php">./tests</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory suffix=".php">./app</directory>
+            <directory suffix=".php">./src</directory>
+        </include>
+    </source>
+</phpunit>
+
+
+
+================================================
+FILE: SECURITY.md
+================================================
+# Security Policy
+
+## 🔒 Reporting a Vulnerability
+
+At AbacatePay, we take security seriously. If you discover a security vulnerability within our PHP SDK, please follow these steps:
+
+1. **DO NOT** open a public GitHub issue
+2. Email us at [ajuda@abacatepay.com](mailto:ajuda@abacatepay.com)
+3. Include detailed information about the vulnerability
+4. Allow us up to 48 hours for an initial response
+5. Please avoid sharing the vulnerability details publicly until we've had a chance to address it
+
+## 🛡️ Security Best Practices
+
+When using the AbacatePay PHP SDK, please follow these security guidelines:
+
+### API Token Security
+- Never commit your API tokens to version control
+- Use environment variables or secure secret management systems
+- Rotate your API tokens periodically
+- Use different tokens for development and production environments
+
+```php
+// Good Practice
+\AbacatePay\Clients\Client::setToken($_ENV["ABACATEPAY_TOKEN"]);
+
+// Bad Practice - Never do this
+\AbacatePay\Clients\Client::setToken("abc123xyz...");
+
+
+
+================================================
+FILE: src/Clients/BillingClient.php
+================================================
+<?php
+
+namespace AbacatePay\Clients;
+
+use AbacatePay\Resources\Billing;
+use GuzzleHttp\Client as GuzzleHttpClient;
+
+/**
+ * Client class for managing billing-related operations in the AbacatePay API.
+ *
+ * This class provides methods to list and create billings, utilizing the base Client functionality.
+ */
+class BillingClient extends Client
+{
+    /**
+     * API endpoint for billing-related operations.
+     */
+    const URI = 'billing';
+
+    /**
+     * Constructor for the BillingClient class.
+     *
+     * Initializes the client for the billing endpoint.
+     *
+     * @param GuzzleHttpClient|null $client Optional GuzzleHttpClient instance for custom configurations.
+     */
+    public function __construct(GuzzleHttpClient $client = null)
+    {
+        parent::__construct(self::URI, $client);
+    }
+    
+    /**
+     * Retrieves a list of billings.
+     *
+     * Sends a GET request to the "list" endpoint and returns an array of Billing objects.
+     *
+     * @return Billing[] An array of Billing objects representing the billings retrieved.
+     */
+    public function list(): array
+    {
+        $response = $this->request("GET", "list");
+        return array_map(fn($data) => new Billing($data), $response);
+    }
+
+    /**
+     * Creates a new billing.
+     *
+     * Sends a POST request to the "create" endpoint with the billing data and returns the created Billing object.
+     *
+     * @param Billing $data The billing data to be sent for creation.
+     * @return Billing The created Billing object.
+     */
+    public function create(Billing $data): Billing
+    {
+        $requestData = [
+            'frequency' => $data->frequency,
+            'methods' => $data->methods,
+            'products' => $data->products,
+            'returnUrl' => $data->metadata->return_url,
+            'completionUrl' => $data->metadata->completion_url,
+            'products' => array_map(fn($product) => [
+                'externalId' => $product->external_id,
+                'name' => $product->name,
+                'description' => $product->description,
+                'quantity' => $product->quantity,
+                'price' => $product->price
+            ], $data->products),
+        ];
+
+        if (!isset($data->customer->id)) {
+            $requestData['customer'] = [
+                'name' => $data->customer->metadata->name,
+                'email' => $data->customer->metadata->email,
+                'cellphone' => $data->customer->metadata->cellphone,
+                'taxId' => $data->customer->metadata->tax_id
+            ];
+        } else {
+            $requestData['customerId'] = $data->customer->id;
+        }
+
+        $response = $this->request("POST", "create", [
+            'json' => $requestData
+        ]);
+
+        return new Billing($response);
+    }
+}
+
+
+================================================
+FILE: src/Clients/Client.php
+================================================
+<?php
+
+namespace AbacatePay\Clients;
+
+use Exception;
+use GuzzleHttp\Client as GuzzleHttpClient;
+use GuzzleHttp\Exception\RequestException;
+use Throwable;
+
+/**
+ * Client class for interacting with the AbacatePay API.
+ *
+ * This class handles API requests using GuzzleHttp and provides a way to manage
+ * authentication and communication with the AbacatePay service.
+ */
+class Client
+{
+    /**
+     * Guzzle HTTP client instance.
+     *
+     * @var GuzzleHttpClient
+     */
+    private GuzzleHttpClient $client;
+
+    /**
+     * API authentication token.
+     *
+     * @var string|null
+     */
+    protected static ?string $token;
+
+    /**
+     * Base URI for the AbacatePay API.
+     */
+    const BASE_URI = 'https://api.abacatepay.com/v1';
+
+    /**
+     * Constructor for the Client class.
+     *
+     * @param string $uri The specific API endpoint to interact with.
+     * @param GuzzleHttpClient|null $client Optional GuzzleHttpClient instance for custom configurations.
+     */
+    public function __construct(string $uri, GuzzleHttpClient $client = null)
+    {
+        $this->client = $client ?? new GuzzleHttpClient([
+            'base_uri' => self::BASE_URI . "/" . $uri . "/",
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . self::$token
+            ]
+        ]);
+    }
+
+    /**
+     * Sends an HTTP request to the API.
+     *
+     * @param string $method The HTTP method (e.g., GET, POST).
+     * @param string $uri The endpoint URI relative to the base URI.
+     * @param array $options Optional settings and parameters for the request.
+     * @return array The response data as an associative array.
+     * @throws Exception If an error occurs during the request.
+     */
+    public function request(string $method, string $uri, array $options = []): array
+    {
+        try {
+            return json_decode($this->client->request($method, $uri, $options)->getBody(), true)["data"];
+        } catch (RequestException $e) {
+            $errorMessage = null;
+
+            if ($e->hasResponse()) {
+                $errorResponse = json_decode($e->getResponse()->getBody());
+                $errorMessage = $errorResponse->message ?? $errorResponse->error;
+            }
+
+            throw new Exception("Request error: " . $errorMessage ?? $e->getMessage(), $e->getCode());
+        } catch (Throwable $e) {
+            throw new Exception("Unexpected error: " . $e->getMessage(), $e->getCode());
+        }
+    }
+
+    /**
+     * Sets the API authentication token.
+     *
+     * @param string $token The API token to authenticate requests.
+     */
+    public static function setToken(string $token): void
+    {
+        self::$token = $token;
+    }
+}
+
+
+================================================
+FILE: src/Clients/CustomerClient.php
+================================================
+<?php
+
+namespace AbacatePay\Clients;
+
+use AbacatePay\Resources\Customer;
+use GuzzleHttp\Client as GuzzleHttpClient;
+
+/**
+ * Client class for managing customer-related operations in the AbacatePay API.
+ *
+ * This class provides methods to list and create customers, utilizing the base Client functionality.
+ */
+class CustomerClient extends Client
+{
+    /**
+     * API endpoint for customer-related operations.
+     */
+    const URI = 'customer';
+
+    /**
+     * Constructor for the CustomerClient class.
+     *
+     * Initializes the client for the customer endpoint.
+     *
+     * @param GuzzleHttpClient|null $client Optional GuzzleHttpClient instance for custom configurations.
+     */
+    public function __construct(GuzzleHttpClient $client = null)
+    {
+        parent::__construct(self::URI, $client);
+    }
+    
+    /**
+     * Retrieves a list of customers.
+     *
+     * Sends a GET request to the "list" endpoint and returns an array of Customer objects.
+     *
+     * @return Customer[] An array of Customer objects representing the customers retrieved.
+     */
+    public function list(): array
+    {
+        $response = $this->request("GET", "list");
+        return array_map(fn($data) => new Customer($data), $response);
+    }
+
+    /**
+     * Creates a new customer.
+     *
+     * Sends a POST request to the "create" endpoint with the customer data and returns the created Customer object.
+     *
+     * @param Customer $data The customer data to be sent for creation.
+     * @return Customer The created Customer object.
+     */
+    public function create(Customer $data): Customer
+    {
+        $response = $this->request("POST", "create", [
+            'json' => [
+                'name' => $data->metadata->name,
+                'email' => $data->metadata->email,
+                'cellphone' => $data->metadata->cellphone,
+                'taxId' => $data->metadata->tax_id
+            ]
+        ]);
+
+        return new Customer($response);
+    }
+}
+
+
+================================================
+FILE: src/Enums/Billing/Frequencies.php
+================================================
+<?php
+
+namespace AbacatePay\Enums\Billing;
+
+/**
+ * Enumeration defining billing frequencies.
+ *
+ * This enumeration is used to categorize different payment or billing frequencies.
+ */
+enum Frequencies: string
+{
+    /**
+     * One-time billing.
+     *
+     * Represents a billing that occurs only once.
+     */
+    case ONE_TIME = "ONE_TIME";
+}
+
+
+================================================
+FILE: src/Enums/Billing/Methods.php
+================================================
+<?php
+
+namespace AbacatePay\Enums\Billing;
+
+/**
+ * Enumeration defining billing methods.
+ *
+ * This enumeration is used to represent different payment methods available for billing.
+ */
+enum Methods: string
+{
+    /**
+     * PIX payment method.
+     *
+     * Represents the PIX payment method, a popular instant payment system in Brazil.
+     */
+    case PIX = "PIX";
+}
+
+
+================================================
+FILE: src/Enums/Billing/Statuses.php
+================================================
+<?php
+
+namespace AbacatePay\Enums\Billing;
+
+/**
+ * Enumeration defining billing statuses.
+ *
+ * This enumeration is used to represent the various statuses that a billing process can have.
+ */
+enum Statuses: string
+{
+    /**
+     * Pending status.
+     *
+     * Indicates that the billing is pending and has not yet been processed.
+     */
+    case PENDING = "PENDING";
+
+    /**
+     * Expired status.
+     *
+     * Indicates that the billing has expired and is no longer valid.
+     */
+    case EXPIRED = "EXPIRED";
+
+    /**
+     * Cancelled status.
+     *
+     * Indicates that the billing has been cancelled and will not be processed.
+     */
+    case CANCELLED = "CANCELLED";
+
+    /**
+     * Paid status.
+     *
+     * Indicates that the billing has been successfully paid.
+     */
+    case PAID = "PAID";
+
+    /**
+     * Refunded status.
+     *
+     * Indicates that the billing has been refunded to the payer.
+     */
+    case REFUNDED = "REFUNDED";
+}
+
+
+================================================
+FILE: src/Resources/Billing.php
+================================================
+<?php
+
+namespace AbacatePay\Resources;
+
+use AbacatePay\Enums\Billing\Frequencies;
+use AbacatePay\Enums\Billing\Methods;
+use AbacatePay\Enums\Billing\Statuses;
+use AbacatePay\Resources\Billing\Metadata;
+use AbacatePay\Resources\Billing\Product;
+use DateTime;
+
+/**
+ * Represents a billing resource in the AbacatePay system.
+ *
+ * This class contains information about a billing entity, including metadata, customer details,
+ * payment methods, products, and billing frequency.
+ */
+class Billing extends Resource
+{
+    /**
+     * Unique identifier for the billing.
+     *
+     * @var string|null
+     */
+    public ?string $id;
+
+    /**
+     * Identifier for the associated account.
+     *
+     * @var string|null
+     */
+    public ?string $account_id;
+
+    /**
+     * URL for accessing the billing resource.
+     *
+     * @var string|null
+     */
+    public ?string $url;
+
+    /**
+     * Array of payment methods available for the billing.
+     *
+     * @var Methods[]|null
+     */
+    public ?array $methods;
+
+    /**
+     * Array of products associated with the billing.
+     *
+     * @var Product[]|null
+     */
+    public ?array $products;
+
+    /**
+     * Indicates whether the billing is in development mode.
+     *
+     * @var bool|null
+     */
+    public ?bool $dev_mode;
+
+    /**
+     * Total amount of the billing in the smallest currency unit (e.g., cents).
+     *
+     * @var int|null
+     */
+    public ?int $amount;
+
+    /**
+     * Metadata associated with the billing.
+     *
+     * @var Metadata|null
+     */
+    public ?Metadata $metadata;
+
+    /**
+     * Frequency of the billing.
+     *
+     * @var Frequencies|null
+     */
+    public ?Frequencies $frequency;
+
+    /**
+     * Current status of the billing.
+     *
+     * @var Statuses|null
+     */
+    public ?Statuses $status;
+
+    /**
+     * Customer associated with the billing.
+     *
+     * @var Customer|null
+     */
+    public ?Customer $customer;
+
+    /**
+     * Date and time of the next billing.
+     *
+     * @var DateTime|null
+     */
+    public ?DateTime $next_billing;
+
+    /**
+     * Date and time when the billing was created.
+     *
+     * @var DateTime|null
+     */
+    public ?DateTime $created_at;
+
+    /**
+     * Date and time when the billing was last updated.
+     *
+     * @var DateTime|null
+     */
+    public ?DateTime $updated_at;
+
+    /**
+     * Constructor for the Billing class.
+     *
+     * Initializes the Billing object with the provided data.
+     *
+     * @param array $data Associative array of billing properties.
+     */
+    public function __construct(array $data)
+    {
+        foreach ($data as $key => $value) {
+            $this->__set($key, $value);
+        }
+    }
+
+    /**
+     * Dynamically sets a property value after processing it.
+     *
+     * @param string $name The name of the property to set.
+     * @param mixed $value The value to set for the property.
+     */
+    public function __set($name, $value)
+    {
+        $name = $this->__camelToSnakeCase($name);
+
+        if (!property_exists($this, $name)) {
+            return;
+        }
+
+        $this->{$name} = $this->processValue($name, $value);
+    }
+
+    /**
+     * Processes the value of a property based on its type and context.
+     *
+     * @param string $name The name of the property.
+     * @param mixed $value The value to process.
+     * @return mixed The processed value.
+     */
+    private function processValue($name, $value)
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        switch ($name) {
+            case 'next_billing':
+            case 'created_at':
+            case 'updated_at':
+                return $this->__initializeDateTime($value);
+            case 'status':
+                return $this->__initializeEnum(Statuses::class, $value);
+            case 'frequency':
+                return $this->__initializeEnum(Frequencies::class, $value);
+            case 'metadata':
+                return $this->__initializeResource(Metadata::class, $value);
+            case 'customer':
+                return $this->__initializeResource(Customer::class, $value);
+            case 'products':
+                return array_map(fn($product) => $this->__initializeResource(Product::class, $product), $value);
+            case 'methods':
+                return array_map(fn($method) => $this->__initializeEnum(Methods::class, $method), $value);
+            default:
+                return $value;
+        }
+    }
+}
+
+
+================================================
+FILE: src/Resources/Customer.php
+================================================
+<?php
+
+namespace AbacatePay\Resources;
+
+use AbacatePay\Resources\Customer\Metadata;
+use AbacatePay\Resources\Resource;
+
+/**
+ * Represents a customer resource in the AbacatePay system.
+ *
+ * This class contains information about a customer, including their metadata.
+ */
+class Customer extends Resource
+{
+    /**
+     * Unique identifier for the customer.
+     *
+     * @var string|null
+     */
+    public ?string $id;
+
+    /**
+     * Metadata associated with the customer.
+     *
+     * @var Metadata|null
+     */
+    public ?Metadata $metadata;
+
+    /**
+     * Constructor for the Customer class.
+     *
+     * Initializes the Customer object with the provided data.
+     *
+     * @param array $data Associative array of customer properties.
+     */
+    public function __construct(array $data)
+    {
+        foreach ($data as $key => $value) {
+            $this->__set($key, $value);
+        }
+    }
+
+    /**
+     * Dynamically sets a property value after processing it.
+     *
+     * @param string $name The name of the property to set.
+     * @param mixed $value The value to set for the property.
+     */
+    public function __set($name, $value)
+    {
+        $name = $this->__camelToSnakeCase($name);
+
+        if (!property_exists($this, $name)) {
+            return;
+        }
+
+        $this->{$name} = $this->processValue($name, $value);
+    }
+
+    /**
+     * Processes the value of a property based on its type and context.
+     *
+     * @param string $name The name of the property.
+     * @param mixed $value The value to process.
+     * @return mixed The processed value.
+     */
+    private function processValue($name, $value)
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        switch ($name) {
+            case 'metadata':
+                return $this->__initializeResource(Metadata::class, $value);
+            default:
+                return $value;
+        }
+    }
+}
+
+
+================================================
+FILE: src/Resources/Resource.php
+================================================
+<?php
+
+namespace AbacatePay\Resources;
+
+use DateTime;
+
+/**
+ * Base class for resources in the AbacatePay system.
+ *
+ * This class provides utility methods for initializing resource objects, enums, and handling
+ * property mapping between camelCase and snake_case.
+ */
+class Resource
+{
+    /**
+     * Initializes a DateTime object from a string or DateTime instance.
+     *
+     * @param string|DateTime $value The value to initialize as a DateTime.
+     * @return DateTime|null The initialized DateTime object or null if the value is empty.
+     */
+    protected function __initializeDateTime(string|DateTime $value): ?DateTime
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if ($value instanceof DateTime) {
+            return $value;
+        }
+
+        return new DateTime($value);
+    }
+
+    /**
+     * Initializes an enum instance from a string or object.
+     *
+     * @param string $enum The enum class name.
+     * @param string|object $value The value to initialize as an enum instance.
+     * @return object|null The initialized enum instance or null if the value is invalid.
+     */
+    protected function __initializeEnum(string $enum, string|object $value): ?object
+    {
+        if ($value instanceof $enum) {
+            return $value;
+        }
+
+        return $enum::from($value);
+    }
+
+    /**
+     * Initializes a resource object from an array or object.
+     *
+     * @param string $resource The resource class name.
+     * @param array|object $value The value to initialize as a resource object.
+     * @return object|null The initialized resource object or null if the value is invalid.
+     */
+    protected function __initializeResource(string $resource, array|object $value): ?object
+    {
+        if ($value instanceof $resource) {
+            return $value;
+        }
+
+        return new $resource($value);
+    }
+
+    /**
+     * Fills a resource object with data from an associative array.
+     *
+     * @param object $class The resource object to fill.
+     * @param array $data The data to populate into the resource object.
+     * @return void
+     */
+    protected function __fill(object $class, array $data): void
+    {
+        foreach ($data as $name => $value) {
+            $name = $this->__camelToSnakeCase($name);
+            
+            if (!property_exists($class, $name)) {
+                continue;
+            }
+
+            $class->{$name} = $value;
+        }
+    }
+
+    /**
+     * Converts a camelCase string to snake_case.
+     *
+     * @param string $input The camelCase string to convert.
+     * @return string The converted snake_case string.
+     */
+    protected function __camelToSnakeCase(string $input): string
+    {
+        $snake = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $input);
+        $snake = preg_replace('/([A-Z])([A-Z][a-z])/', '$1_$2', $snake);
+        return strtolower($snake);
+    }
+}
+
+
+================================================
+FILE: src/Resources/Billing/Metadata.php
+================================================
+<?php
+
+namespace AbacatePay\Resources\Billing;
+
+use AbacatePay\Resources\Resource;
+
+/**
+ * Represents metadata for a billing resource in the AbacatePay system.
+ *
+ * This class contains additional information related to a billing resource,
+ * such as fee, return URL, and completion URL.
+ */
+class Metadata extends Resource
+{
+    /**
+     * Fee associated with the billing.
+     *
+     * @var int|null
+     */
+    public ?int $fee;
+
+    /**
+     * URL to redirect the user after payment is canceled or abandoned.
+     *
+     * @var string|null
+     */
+    public ?string $return_url;
+
+    /**
+     * URL to redirect the user after successful payment.
+     *
+     * @var string|null
+     */
+    public ?string $completion_url;
+
+    /**
+     * Constructor for the Metadata class.
+     *
+     * Initializes the Metadata object with the provided data.
+     *
+     * @param array $data An associative array of metadata properties.
+     */
+    public function __construct(array $data)
+    {
+        $this->__fill($this, $data);
+    }
+}
+
+
+================================================
+FILE: src/Resources/Billing/Product.php
+================================================
+<?php
+
+namespace AbacatePay\Resources\Billing;
+
+use AbacatePay\Resources\Resource;
+
+/**
+ * Represents a product in a billing resource in the AbacatePay system.
+ *
+ * This class contains information about a product, such as its identifier, name, description,
+ * quantity, and price.
+ */
+class Product extends Resource
+{
+    /**
+     * External identifier for the product.
+     *
+     * @var string|null
+     */
+    public ?string $external_id;
+
+    /**
+     * Internal identifier for the product in the system.
+     *
+     * @var string|null
+     */
+    public ?string $product_id;
+
+    /**
+     * Name of the product.
+     *
+     * @var string|null
+     */
+    public ?string $name;
+
+    /**
+     * Description of the product.
+     *
+     * @var string|null
+     */
+    public ?string $description;
+
+    /**
+     * Quantity of the product.
+     *
+     * @var int|null
+     */
+    public ?int $quantity;
+
+    /**
+     * Price of the product in the smallest currency unit (e.g., cents).
+     *
+     * @var int|null
+     */
+    public ?int $price;
+
+    /**
+     * Constructor for the Product class.
+     *
+     * Initializes the Product object with the provided data.
+     *
+     * @param array $data An associative array of product properties.
+     */
+    public function __construct(array $data)
+    {
+        $this->__fill($this, $data);
+    }
+}
+
+
+================================================
+FILE: src/Resources/Customer/Metadata.php
+================================================
+<?php
+
+namespace AbacatePay\Resources\Customer;
+
+use AbacatePay\Resources\Resource;
+
+/**
+ * Represents metadata for a customer in the AbacatePay system.
+ *
+ * This class contains additional information about a customer, such as their name,
+ * contact details, and tax identification number.
+ */
+class Metadata extends Resource
+{
+    /**
+     * Customer's name.
+     *
+     * @var string|null
+     */
+    public ?string $name;
+
+    /**
+     * Customer's cellphone number.
+     *
+     * @var string|null
+     */
+    public ?string $cellphone;
+
+    /**
+     * Customer's email address.
+     *
+     * @var string|null
+     */
+    public ?string $email;
+
+    /**
+     * Customer's tax identification number.
+     *
+     * @var string|null
+     */
+    public ?string $tax_id;
+    
+    /**
+     * Constructor for the Metadata class.
+     *
+     * Initializes the Metadata object with the provided data.
+     *
+     * @param array $data An associative array of metadata properties.
+     */
+    public function __construct(array $data)
+    {
+        $this->__fill($this, $data);
+    }
+}
+
+
+================================================
+FILE: tests/Pest.php
+================================================
+<?php
+
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\Psr7\Response;
+
+/**
+ * Creates a mock Guzzle HTTP client for testing purposes.
+ *
+ * This function sets up a Guzzle client with a mocked handler that returns a predefined JSON response
+ * from a file. The file path is relative to the `Mocks/Response` directory.
+ *
+ * @param string $responseFilePath The relative path (excluding `.json`) to the mock response file.
+ * @return Client The Guzzle HTTP client with the mock handler.
+ */
+function createMockClient(string $responseFilePath): Client
+{
+    $handler = new MockHandler();
+
+    $handler->append(
+        new Response(
+            status: 200,
+            body: file_get_contents(__DIR__ . '/Mocks/Response/' . $responseFilePath . '.json')
+        )
+    );
+
+    return new Client([
+        'handler' => $handler
+    ]);
+}
+
+/**
+ * Creates a mock client with a predefined response for listing billings.
+ *
+ * @return Client The mock Guzzle HTTP client.
+ */
+function getListBillingsResponseClient(): Client
+{
+    return createMockClient('Billing/list');
+}
+
+/**
+ * Creates a mock client with a predefined response for creating a billing.
+ *
+ * @return Client The mock Guzzle HTTP client.
+ */
+function getCreateBillingResponseClient(): Client
+{
+    return createMockClient('Billing/create');
+}
+
+/**
+ * Creates a mock client with a predefined response for listing customers.
+ *
+ * @return Client The mock Guzzle HTTP client.
+ */
+function getListCustomersResponseClient(): Client
+{
+    return createMockClient('Customer/list');
+}
+
+/**
+ * Creates a mock client with a predefined response for creating a customer.
+ *
+ * @return Client The mock Guzzle HTTP client.
+ */
+function getCreateCustomerResponseClient(): Client
+{
+    return createMockClient('Customer/create');
+}
+
+
+================================================
+FILE: tests/Client/BillingClientTest.php
+================================================
+<?php
+
+use AbacatePay\Clients\BillingClient;
+use AbacatePay\Enums\Billing\Frequencies;
+use AbacatePay\Enums\Billing\Methods;
+use AbacatePay\Resources\Billing;
+use AbacatePay\Resources\Billing\Metadata as BillingMetadata;
+use AbacatePay\Resources\Customer\Metadata as CustomerMetadata;
+use AbacatePay\Resources\Billing\Product;
+use AbacatePay\Resources\Customer;
+
+/**
+ * Test case: Retrieve a list of billings.
+ *
+ * This test verifies that the `list` method of `BillingClient` correctly retrieves
+ * an array of `Billing` instances.
+ */
+test('Get list of billings', function () {
+    // Mocked client with a fake response for listing billings
+    $fakeClient = getListBillingsResponseClient();
+    
+    // Create a BillingClient instance using the mocked client
+    $billingClient = new BillingClient($fakeClient);
+
+    // Assert that the response is an array containing only Billing instances
+    expect($billingClient->list())->toBeArray()->toContainOnlyInstancesOf(Billing::class);
+});
+
+/**
+ * Test case: Create a new billing.
+ *
+ * This test verifies that the `create` method of `BillingClient` successfully creates
+ * a `Billing` instance when valid data is provided.
+ */
+test('Create a billing', function () {
+    // Create a new Billing object with required data
+    $billing = new Billing([
+        'frequency' => Frequencies::ONE_TIME,
+        'methods' => [ Methods::PIX ],
+        'products' => [
+            new Product([
+                'external_id' => 'abc_123',
+                'name' => 'Abacate',
+                'description' => 'Abacate maduro',
+                'quantity' => 1,
+                'price' => 100
+            ])
+        ],
+        'metadata' => new BillingMetadata([
+            'return_url' => 'https://www.abacatepay.com',
+            'completion_url' => 'https://www.abacatepay.com'
+        ]),
+        'customer' => new Customer([
+            'metadata' => new CustomerMetadata([
+                'name' => 'Abacate Lover',
+                'cellphone' => '01912341234',
+                'email' => 'lover@abacate.com',
+                'tax_id' => '13827826837'
+            ])
+        ])
+    ]);
+    
+    // Mocked client with a fake response for creating a billing
+    $fakeClient = getCreateBillingResponseClient();
+
+    // Create a BillingClient instance using the mocked client
+    $billingClient = new BillingClient($fakeClient);
+
+    // Assert that the `create` method returns a Billing instance
+    expect($billingClient->create($billing))->toBeInstanceOf(Billing::class);
+});
+
+
+================================================
+FILE: tests/Client/CustomerClientTest.php
+================================================
+<?php
+
+use AbacatePay\Clients\CustomerClient;
+use AbacatePay\Resources\Customer;
+use AbacatePay\Resources\Customer\Metadata;
+
+/**
+ * Test case: Retrieve a list of customers.
+ *
+ * This test verifies that the `list` method of `CustomerClient` correctly retrieves
+ * an array of `Customer` instances.
+ */
+test('Get list of customers', function () {
+    // Mocked client with a fake response for listing customers
+    $fakeClient = getListCustomersResponseClient();
+
+    // Create a CustomerClient instance using the mocked client
+    $customerClient = new CustomerClient($fakeClient);
+
+    // Assert that the response is an array containing only Customer instances
+    expect($customerClient->list())->toBeArray()->toContainOnlyInstancesOf(Customer::class);
+});
+
+/**
+ * Test case: Create a new customer.
+ *
+ * This test verifies that the `create` method of `CustomerClient` successfully creates
+ * a `Customer` instance when valid data is provided.
+ */
+test('Create a customer', function () {
+    // Create a new Customer object with required metadata
+    $customer = new Customer([
+        'metadata' => new Metadata([
+            'name' => 'Abacate Lover',
+            'cellphone' => '01912341234',
+            'email' => 'lover@abacate.com',
+            'tax_id' => '13827826837'
+        ])
+    ]);
+    
+    // Mocked client with a fake response for creating a customer
+    $fakeClient = getCreateCustomerResponseClient();
+
+    // Create a CustomerClient instance using the mocked client
+    $customerClient = new CustomerClient($fakeClient);
+
+    // Assert that the `create` method returns a Customer instance
+    expect($customerClient->create($customer))->toBeInstanceOf(Customer::class);
+});
+
+
+================================================
+FILE: tests/Mocks/Response/Billing/create.json
+================================================
+{
+    "error": null,
+    "data": {
+        "accountId": "acco_ERdzBxUMReqQnKT4z4DrLKsf",
+        "storeId": "store_GkprtuCk4D0qtncgMZQ5ZPh4",
+        "products": [
+            {
+                "id": "prod_r234yHaDArQPWM3PHmzZKCyD",
+                "externalId": "abc_123",
+                "quantity": 1
+            }
+        ],
+        "amount": 100,
+        "status": "PENDING",
+        "devMode": true,
+        "methods": ["PIX"],
+        "frequency": "ONE_TIME",
+        "metadata": {
+            "fee": 100,
+            "returnUrl": "https://www.abacatepay.com",
+            "completionUrl": "https://www.abacatepay.com"
+        },
+        "createdAt": "2024-12-07T22:25:54.738Z",
+        "updatedAt": "2024-12-07T22:25:54.738Z",
+        "url": "https://abacatepay.com/pay/bill_YcxMCe4Fq0wJEcnP5gLPq0Yc",
+        "customer": {
+            "metadata": {
+                "name": "Abacate Lover",
+                "cellphone": "01912341234",
+                "taxId": "13827826837",
+                "email": "lover@abacate.com"
+            }
+        },
+        "id": "bill_YcxMCe4Fq0wJEcnP5gLPq0Yc"
+    }
+}
+
+
+
+================================================
+FILE: tests/Mocks/Response/Billing/list.json
+================================================
+{
+    "error": null,
+    "data": [
+        {
+            "metadata": {
+                "fee": 100,
+                "returnUrl": "https://www.abacatepay.com",
+                "completionUrl": "https://www.abacatepay.com"
+            },
+            "accountId": "acco_ERdzBxUMReqQnKT4z4DrLKsf",
+            "storeId": "store_GkprtuCk4D0qtncgMZQ5ZPh4",
+            "products": [
+                {
+                    "id": "prod_r234yHaDArQPWM3PHmzZKCyD",
+                    "externalId": "abc_123",
+                    "quantity": 1
+                }
+            ],
+            "amount": 100,
+            "status": "PAID",
+            "devMode": true,
+            "methods": ["PIX"],
+            "frequency": "ONE_TIME",
+            "createdAt": "2024-12-07T17:29:48.839Z",
+            "updatedAt": "2024-12-07T17:29:48.839Z",
+            "url": "https://abacatepay.com/pay/bill_j2qugKAGHRPHLQGGCumAq0ZJ",
+            "customer": {
+                "metadata": {
+                    "name": "Abacate Lover",
+                    "cellphone": "01912341234",
+                    "taxId": "13827826837",
+                    "email": "lover@abacate.com"
+                }
+            },
+            "id": "bill_j2qugKAGHRPHLQGGCumAq0ZJ"
+        },
+        {
+            "metadata": {
+                "fee": 100,
+                "returnUrl": "https://www.abacatepay.com",
+                "completionUrl": "https://www.abacatepay.com"
+            },
+            "accountId": "acco_ERdzBxUMReqQnKT4z4DrLKsf",
+            "storeId": "store_GkprtuCk4D0qtncgMZQ5ZPh4",
+            "products": [
+                {
+                    "id": "prod_r234yHaDArQPWM3PHmzZKCyD",
+                    "externalId": "abc_123",
+                    "quantity": 1
+                }
+            ],
+            "amount": 100,
+            "status": "PENDING",
+            "devMode": true,
+            "methods": ["PIX"],
+            "frequency": "ONE_TIME",
+            "createdAt": "2024-12-07T17:55:31.100Z",
+            "updatedAt": "2024-12-07T17:55:31.100Z",
+            "url": "https://abacatepay.com/pay/bill_TBcR6upqLMXwyhGypq2bdgA1",
+            "customer": {
+                "metadata": {
+                    "name": "Abacate Lover",
+                    "cellphone": "01912341234",
+                    "taxId": "13827826837",
+                    "email": "lover@abacate.com"
+                }
+            },
+            "id": "bill_TBcR6upqLMXwyhGypq2bdgA1"
+        }
+    ]
+}
+
+
+
+================================================
+FILE: tests/Mocks/Response/Customer/create.json
+================================================
+{
+    "error": null,
+    "data": {
+        "accountId": "acco_ERdzBxUMReqQnKT4z4DrLKsf",
+        "storeId": "store_GkprtuCk4D0qtncgMZQ5ZPh4",
+        "devMode": true,
+        "metadata": {
+            "name": "Abacate Lover",
+            "cellphone": "01912341234",
+            "taxId": "13827826837",
+            "email": "lover@abacate.com"
+        },
+        "createdAt": "2024-12-07T22:47:04.798Z",
+        "updatedAt": "2024-12-07T22:47:04.798Z",
+        "id": "cust_45ngpDrEWUqDA1r4NAaRFjKS"
+    }
+}
+
+
+
+================================================
+FILE: tests/Mocks/Response/Customer/list.json
+================================================
+{
+    "error": null,
+    "data": [
+        {
+            "id": "cust_DEbpqcNruex6z4jmfYDSzyLf",
+            "metadata": {
+                "name": "Abacate Lover",
+                "cellphone": "01912341234",
+                "taxId": "13827826837",
+                "email": "lover@abacate.com"
+            }
+        },
+        {
+            "id": "cust_bEMgNLBewUr2UtJZL3eySTEY",
+            "metadata": {
+                "name": "Abacate Lover",
+                "cellphone": "01912341234",
+                "taxId": "13827826837",
+                "email": "lover@abacate.com"
+            }
+        }
+    ]
+}
+
+
