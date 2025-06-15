@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Onest } from "next/font/google";
+import { Fustat, Onest } from "next/font/google";
 import "./globals.css";
 
-const onest = Onest({ subsets: ["latin"] });
+const fustat = Fustat({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Abacate Chat",
@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${onest.className} antialiased`}>{children}</body>
+      <body className={`${fustat.className} antialiased`}>{children}</body>
     </html>
   );
 }
