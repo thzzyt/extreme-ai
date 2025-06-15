@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
 
+@theme {
+  --color-green-abc: #9EEA6C;
+}
+
 /* ---------------------------------------------------------------------------- */
 /* Design System: CSS Variables for Light and Dark Modes */
 /* ---------------------------------------------------------------------------- */
@@ -47,12 +51,13 @@
 
     /* Chatbot colors */
     --chat-background: 158 40% 98%;
-    --user-message: 89 58% 52%;
+    --user-message:#9EEA6C;
     --user-message-foreground: 0 0% 100%;
     --bot-message: 0 0% 100%;
     --bot-message-foreground: 158 64% 20%;
     --chat-input: 0 0% 100%;
     --chat-input-border: 158 30% 85%;
+
   }
 
   .dark {
@@ -96,7 +101,7 @@
     /* Chatbot colors for dark mode */
     --chat-background: 158 20% 6%;
     --user-message: 84 52% 52%;
-    --user-message-foreground: 0 0% 100%;
+    --user-message-foreground: #204749;
     --bot-message: 72 80% 61%;
     --bot-message-foreground: 0 0% 100%;
     --chat-input: 158 20% 10%;
@@ -125,8 +130,8 @@
     background-color: hsl(var(--chat-background));
   }
   .user-message-bg {
-    background-color: hsl(var(--user-message));
-    color: hsl(var(--user-message-foreground));
+    background-color: var(--user-message);
+    color: var(--user-message-foreground);
   }
   .bot-message-bg {
     background-color: hsl(var(--bot-message));

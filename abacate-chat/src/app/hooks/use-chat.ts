@@ -7,15 +7,7 @@ import {
 import { useToast } from "@/app/hooks/use-toast";
 
 export const useChat = () => {
-  const [messages, setMessages] = useState<ChatMessageType[]>([
-    {
-      id: "1",
-      content:
-        "Olá, eu sou o Abacatinho, assistente da Abacate Pay, como posso te ajudar?",
-      sender: "bot",
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);

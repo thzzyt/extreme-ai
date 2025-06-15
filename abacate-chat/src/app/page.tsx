@@ -1,9 +1,10 @@
 "use client";
 
-import Footer from "@components/Fotter";
-import TextArea from "@components/TextArea";
-import ButtonsLanguageSelect from "@components/ButtonsLinguageSelect";
+import Footer from "@/app/components/Footer";
+import TextArea from "@/app/components/MainInput";
+import ButtonsLanguageSelect from "@/app/components/ButtonsLanguageSelect";
 import { useState } from "react";
+import { ChatInterfaceV2 } from "./components/ChatInterfaceV2";
 
 export default function Page() {
   const [prompt, setPrompt] = useState<string>("");
@@ -13,12 +14,10 @@ export default function Page() {
   };
 
   return (
-    <div className="bg-white w-full min-h-screen flex flex-col gap-9 justify-center items-center py-12 px-4">
-      <TextArea
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-      />
-      <ButtonsLanguageSelect onSelect={handleLanguageSelect} />
+    <div className="bg-white w-full h-screen flex flex-col justify-center items-center overflow-hidden">
+      <div className="w-full max-w-3xl flex flex-col flex-1 overflow-hidden p-5">
+        <ChatInterfaceV2 />
+      </div>
       <Footer />
     </div>
   );

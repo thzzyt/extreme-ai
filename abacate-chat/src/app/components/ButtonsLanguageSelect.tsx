@@ -5,45 +5,43 @@ import { PhpIcon } from "@icons/stack/php";
 import PythonIcon from "@icons/stack/python";
 import { RubyIcon } from "@icons/stack/Ruby";
 
-//Mock - posteriormente será substituído por uma API que retorna as linguagens disponíveis
-// As linguagens são mockadas para fins de demonstração, mas em um cenário real, você poderia buscar essas informações de uma API ou banco de dados.
 const languages = [
-  { 
-    code: "python", 
-    label: "Python", 
+  {
+    code: "python",
+    label: "Python",
     Icon: PythonIcon,
-    prompt: "me ajude a integrar a AbacatePay usando Python"
+    prompt: "Me ajude a integrar a AbacatePay usando Python",
   },
-  { 
-    code: "javascript", 
-    label: "Javascript", 
+  {
+    code: "javascript",
+    label: "Javascript",
     Icon: JavaScriptIcon,
-    prompt: "me ajude a integrar a AbacatePay usando Javascript"
+    prompt: "Me ajude a integrar a AbacatePay usando Javascript",
   },
-  { 
-    code: "lovable", 
-    label: "Lovable", 
+  {
+    code: "lovable",
+    label: "Lovable",
     Icon: LovableIcon,
-    prompt: "me ajude a integrar a AbacatePay usando Lovable"
+    prompt: "Me ajude a integrar a AbacatePay usando Lovable",
   },
-  { 
-    code: "php", 
-    label: "PHP", 
+  {
+    code: "php",
+    label: "PHP",
     Icon: PhpIcon,
-    prompt: "credo vc esta usando PHP! troca por Python ou Javascript, que vai da bom"
+    prompt: "Me ajude a integrar a AbacatePay usando Lovable",
   },
-  { 
-    code: "ruby", 
-    label: "Ruby", 
+  {
+    code: "ruby",
+    label: "Ruby",
     Icon: RubyIcon,
-    prompt: "me ajude a integrar a AbacatePay usando Ruby"
+    prompt: "Me ajude a integrar a AbacatePay usando Ruby",
   },
   {
     code: "java",
     label: "Java",
     Icon: JavaIcon,
-    prompt: "me ajude a integrar a AbacatePay usando Java"
-  }
+    prompt: "Me ajude a integrar a AbacatePay usando Java",
+  },
 ];
 
 export default function ButtonsLanguageSelect({
@@ -52,7 +50,7 @@ export default function ButtonsLanguageSelect({
   onSelect: (prompt: string) => void;
 }) {
   return (
-    <div className="flex gap-4">
+    <div className="flex flex-wrap justify-center max-w-3xl gap-3">
       {languages.map(({ code, label, Icon, prompt }) => (
         <button
           key={code}
