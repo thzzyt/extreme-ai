@@ -35,12 +35,13 @@ export default function MainInput({
   return (
     <div
       className="
-        flex flex-col w-full max-w-3xl rounded-2xl 
+        flex flex-col w-full max-w-3xl rounded-2xl h-full
         bg-[#F6F8FA] 
         focus-within:ring-1 focus-within:ring-green-abc
         focus-within:shadow-[0_0_16px] focus-within:shadow-green-abc
         focus-within:outline-none
         px-4 pt-5 pb-3
+        z-1
       "
     >
       <textarea

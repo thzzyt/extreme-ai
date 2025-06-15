@@ -19,12 +19,6 @@ const languages = [
     prompt: "Me ajude a integrar a AbacatePay usando Javascript",
   },
   {
-    code: "lovable",
-    label: "Lovable",
-    Icon: LovableIcon,
-    prompt: "Me ajude a integrar a AbacatePay usando Lovable",
-  },
-  {
     code: "php",
     label: "PHP",
     Icon: PhpIcon,

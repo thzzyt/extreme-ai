@@ -17,7 +17,7 @@ export function InitialChat({
       >
         Qual tech você quer usar para integrar a Abacate?
       </h1>
-      <div className="">
+      <div className="h-40">
         <MainInput
           value={value}
           onChange={onChange}
