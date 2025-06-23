@@ -22,7 +22,7 @@ const languages = [
     code: "php",
     label: "PHP",
     Icon: PhpIcon,
-    prompt: "Me ajude a integrar a AbacatePay usando Lovable",
+    prompt: "Me ajude a integrar a AbacatePay usando PHP",
   },
   {
     code: "ruby",
