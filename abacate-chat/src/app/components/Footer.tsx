@@ -20,11 +20,21 @@ export default function Footer() {
           Privacidade
         </p>
         <hr className="w-1px h-5 bg-[#E2E7F1]" />
-        <IconDiscord />
-        <IconInstagram />
-        <IconTwitter />
-        <IconYoutube />
-        <IconGithub />
+        <a target="_blank" href="https://discord.gg/sD7tXPVWUm">
+          <IconDiscord />
+        </a>
+        <a target="_blank" href="https://www.instagram.com/abacatepay">
+          <IconInstagram />
+        </a>
+        <a target="_blank" href="https://x.com/abacatepay">
+          <IconTwitter />
+        </a>
+        <a target="_blank" href="https://www.youtube.com/@abacatepay">
+          <IconYoutube />
+        </a>
+        <a target="_blank" href="https://github.com/AbacatePay/abacate-chat">
+          <IconGithub />
+        </a>
       </div>
     </footer>
   );
