@@ -116,4 +116,6 @@ class ChatApiService {
   }
 }
 
-export const chatApiService = new ChatApiService(process.env.CHAT_API_URL);
+export const chatApiService = new ChatApiService(
+  process.env.NEXT_PUBLIC_CHAT_API_URL
+);
