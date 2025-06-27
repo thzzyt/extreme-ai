@@ -22,7 +22,7 @@ export type StreamCallback = (chunk: StreamChunk) => void;
 class ChatApiService {
   private baseUrl: string;
 
-  constructor(endpoint: string = "http://localhost:3001/api") {
+  constructor(endpoint: string = "https://extreme-ai-nu.vercel.app/api") {
     this.baseUrl = endpoint;
   }
 
