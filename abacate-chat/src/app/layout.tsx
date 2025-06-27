@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     siteName: "Abacate Chat",
     locale: "pt_BR",
     type: "website",
-    url: "https://chat.abacatepay.com",
+    url: "https://extreme-ai-nu.vercel.app/",
   },
   twitter: {
     card: "summary_large_image",
