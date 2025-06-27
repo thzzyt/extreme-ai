@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fustat, Onest } from "next/font/google";
+import { Fustat } from "next/font/google";
 import "./globals.css";
 
 const fustat = Fustat({ subsets: ["latin"] });
@@ -7,6 +7,19 @@ const fustat = Fustat({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Abacate Chat",
   description: "Assitente virtual da Abacate",
+  openGraph: {
+    title: "Abacate Chat",
+    description: "Assitente virtual da Abacate",
+    siteName: "Abacate Chat",
+    locale: "pt_BR",
+    type: "website",
+    url: "https://chat.abacatepay.com",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Abacate Chat",
+    description: "Assitente virtual da Abacate",
+  },
 };
 
 export default function RootLayout({
