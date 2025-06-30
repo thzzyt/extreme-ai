@@ -1,0 +1,1245 @@
+Directory structure:
+└── abacatepay-abacatepay-ruby-sdk/
+    ├── README.md
+    ├── bin/
+    ├── lib/
+    │   ├── abacate_pay.rb
+    │   └── abacatepay/
+    │       ├── clients.rb
+    │       ├── configuration.rb
+    │       ├── enums.rb
+    │       ├── resources.rb
+    │       ├── version.rb
+    │       ├── clients/
+    │       │   ├── billing_client.rb
+    │       │   ├── client.rb
+    │       │   └── customer_client.rb
+    │       ├── enums/
+    │       │   └── billing/
+    │       │       ├── frequencies.rb
+    │       │       ├── methods.rb
+    │       │       └── statuses.rb
+    │       └── resources/
+    │           ├── billing.rb
+    │           ├── customer.rb
+    │           ├── resource.rb
+    │           ├── billing/
+    │           │   ├── metadata.rb
+    │           │   └── product.rb
+    │           └── customer/
+    │               └── metadata.rb
+    ├── sig/
+    │   └── abacatepay/
+    │       └── rails.rbs
+    └── spec/
+        ├── clients/
+        │   ├── billing_client_spec.rb
+        │   ├── client_spec.rb
+        │   └── customer_client_spec.rb
+        ├── enums/
+        │   └── billing/
+        │       ├── frequencies_spec.rb
+        │       ├── methods_spec.rb
+        │       └── statuses_spec.rb
+        └── resources/
+            ├── billing_spec.rb
+            ├── customer_spec.rb
+            ├── resource_spec.rb
+            ├── billing/
+            │   ├── metadata_spec.rb
+            │   └── product_spec.rb
+            └── customer/
+                └── metadata_spec.rb
+
+================================================
+FILE: README.md
+================================================
+# AbacatePay SDK for Ruby on Rails
+
+## 💻 Installation
+
+Add this line to your application's Gemfile:
+
+```ruby
+gem 'abacatepay-ruby'
+```
+
+And then execute:
+
+```bash
+bundle install
+```
+
+Or install it yourself as:
+
+```bash
+gem install abacatepay-ruby
+```
+
+## 🔧 Configuration
+
+Configure your API token and environment in an initializer:
+
+```ruby
+# config/initializers/abacatepay.rb
+AbacatePay.configure do |config|
+  config.api_token = ENV['ABACATEPAY_TOKEN']
+  config.environment = :sandbox # or :production
+end
+```
+
+## 🌟 Resources
+
+### Billing
+
+**Initialize the Billing Client**
+
+```ruby
+billing_client = AbacatePay::Clients::BillingClient.new
+```
+
+**List Billings**
+
+Retrieve a list of all billings:
+
+```ruby
+billing_client.list
+```
+
+**Create a Billing**
+
+To create a billing, use the following code:
+
+```ruby
+billing_client.create(
+  AbacatePay::Resources::Billing.new(
+    frequency: AbacatePay::Enums::Billing::Frequencies::ONE_TIME,
+    methods: [AbacatePay::Enums::Billing::Methods::PIX],
+    products: [
+      AbacatePay::Resources::Billing::Product.new(
+        external_id: 'abc_123',
+        name: 'Product A',
+        description: 'Description of product A',
+        quantity: 1,
+        price: 100 # Price in cents
+      )
+    ],
+    metadata: AbacatePay::Resources::Billing::Metadata.new(
+      return_url: 'https://www.abacatepay.com',
+      completion_url: 'https://www.abacatepay.com'
+    ),
+    customer: AbacatePay::Resources::Customer.new(
+      metadata: AbacatePay::Resources::Customer::Metadata.new(
+        name: 'Abacate Lover',
+        cellphone: '01912341234',
+        email: 'lover@abacate.com',
+        tax_id: '13827826837'
+      )
+    )
+  )
+)
+```
+
+Alternatively, you can use a previously created customer by specifying their ID:
+
+```ruby
+AbacatePay::Resources::Customer.new(
+  id: 'cust_DEbpqcN...'
+)
+```
+
+### Customer
+
+**Initialize the Customer Client**
+
+```ruby
+customer_client = AbacatePay::Clients::CustomerClient.new
+```
+
+**List Customers**
+
+Retrieve a list of all customers:
+
+```ruby
+customer_client.list
+```
+
+**Create a Customer**
+
+To create a customer, use the following code:
+
+```ruby
+customer_client.create(
+  AbacatePay::Resources::Customer.new(
+    metadata: AbacatePay::Resources::Customer::Metadata.new(
+      name: 'Abacate Lover',
+      cellphone: '01912341234',
+      email: 'lover@abacate.com',
+      tax_id: '13827826837'
+    )
+  )
+)
+```
+
+## 📚 Documentation
+
+For detailed information about the API and SDK, refer to the official documentation:
+https://abacatepay.readme.io/reference
+
+## 🤝 Contribution
+
+Contributions are welcome! If you wish to contribute:
+
+1. Fork the repository
+2. Create a new branch for your feature or fix:
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+3. Make your changes and commit them:
+
+```bash
+git commit -m "Add your detailed commit message here"
+```
+
+4. Push to your branch:
+
+```bash
+git push origin feature/your-feature-name
+```
+
+5. Open a pull request with a clear description of your changes
+
+Please ensure your code:
+
+- Includes proper documentation
+- Follows Ruby style guidelines
+- Includes appropriate tests
+- Passes all existing tests (bundle exec rspec)
+- Passes code style checks (bundle exec rubocop)
+
+### Happy coding! 🚀
+
+
+
+================================================
+FILE: lib/abacate_pay.rb
+================================================
+# frozen_string_literal: true
+
+require "abacate_pay/version"
+require "abacate_pay/configuration"
+
+# Main module for AbacatePay SDK integration
+module AbacatePay
+  class Error < StandardError; end
+  class ConfigurationError < Error; end
+  class ApiError < Error; end
+
+  class << self
+    # Gets or sets the global configuration
+    attr_accessor :configuration
+  end
+
+  # Configures the SDK
+  #
+  # @example
+  #   AbacatePay.configure do |config|
+  #     config.api_token = "your-token-here"
+  #     config.environment = :sandbox
+  #   end
+  #
+  # @yield [config] Configuration object
+  # @return [void]
+  def self.configure
+    self.configuration ||= Configuration.new
+    yield(configuration)
+    configuration.validate!
+  end
+
+  # Resets the configuration to defaults
+  #
+  # @return [void]
+  def self.reset!
+    self.configuration = Configuration.new
+  end
+end
+
+# Autoload all components
+Dir[File.join(__dir__, "abacate_pay", "**", "*.rb")].sort.each { |file| require file }
+
+
+================================================
+FILE: lib/abacatepay/clients.rb
+================================================
+# frozen_string_literal: true
+
+require "abacate_pay/clients/client"
+require "abacate_pay/clients/billing_client"
+require "abacate_pay/clients/customer_client"
+
+module AbacatePay
+  # The Clients module contains all API client implementations
+  # for interacting with the AbacatePay API endpoints.
+  module Clients
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/configuration.rb
+================================================
+# frozen_string_literal: true
+
+module AbacatePay
+  # Configuration class for the AbacatePay SDK
+  #
+  # This class handles all configuration options for the SDK, including
+  # API credentials, environment settings, and other customizable options.
+  #
+  # @api public
+  class Configuration
+    # @return [String] API token for authentication
+    attr_accessor :api_token
+
+    # @return [Symbol] Current environment (:production or :sandbox)
+    attr_accessor :environment
+
+    # @return [Integer] Request timeout in seconds
+    attr_accessor :timeout
+
+    # @return [String] Base API URL
+    attr_reader :api_url
+
+    # Initialize a new configuration with default values
+    #
+    # @api public
+    def initialize
+      @environment = :sandbox
+      @timeout = 30
+      @api_token = nil
+    end
+
+    # Validates the configuration
+    #
+    # @raise [ConfigurationError] if any required settings are missing or invalid
+    # @return [void]
+    #
+    # @api public
+    def validate!
+      raise ConfigurationError, "API token is required" if api_token.nil?
+      raise ConfigurationError, "Invalid environment" unless %i[production sandbox].include?(environment)
+    end
+
+    # Gets the base API URL based on the environment
+    #
+    # @return [String] The base API URL
+    #
+    # @api public
+    def api_url
+      if environment == :production
+        "https://api.abacatepay.com/v1"
+      else
+        "https://sandbox.api.abacatepay.com/v1"
+      end
+    end
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/enums.rb
+================================================
+# frozen_string_literal: true
+
+require "abacate_pay/enums/billing/frequencies"
+require "abacate_pay/enums/billing/methods"
+require "abacate_pay/enums/billing/statuses"
+
+module AbacatePay
+  # The Enums module contains all enumeration classes used
+  # throughout the AbacatePay SDK.
+  module Enums
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/resources.rb
+================================================
+# frozen_string_literal: true
+
+require "abacate_pay/resources/resource"
+require "abacate_pay/resources/billing"
+require "abacate_pay/resources/customer"
+require "abacate_pay/resources/billing/metadata"
+require "abacate_pay/resources/billing/product"
+require "abacate_pay/resources/customer/metadata"
+
+module AbacatePay
+  # The Resources module contains all resource classes that
+  # represent the various entities in the AbacatePay system.
+  module Resources
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/version.rb
+================================================
+# frozen_string_literal: true
+
+module AbacatePay
+  VERSION = "0.1.0"
+end
+
+
+================================================
+FILE: lib/abacatepay/clients/billing_client.rb
+================================================
+# frozen_string_literal: true
+
+module AbacatePay
+  module Clients
+    # Client class for managing billing-related operations in the AbacatePay API.
+    class BillingClient < Client
+      # API endpoint for billing-related operations
+      URI = "billing"
+
+      # @param client [Faraday::Connection, nil] Optional Faraday client for custom configurations
+      def initialize(client = nil)
+        super(URI, client)
+      end
+
+      # Retrieves a list of billings
+      #
+      # @return [Array<Resources::Billing>] Array of Billing objects
+      def list
+        response = request("GET", "list")
+        response.map { |data| Resources::Billing.new(data) }
+      end
+
+      # Creates a new billing
+      #
+      # @param data [Resources::Billing] The billing data to be sent for creation
+      # @return [Resources::Billing] The created Billing object
+      def create(data)
+        request_data = {
+          frequency: data.frequency,
+          methods: data.methods,
+          returnUrl: data.metadata&.return_url,
+          completionUrl: data.metadata&.completion_url,
+          products: data.products&.map { |product|
+            {
+              externalId: product.external_id,
+              name: product.name,
+              description: product.description,
+              quantity: product.quantity,
+              price: product.price
+            }
+          }
+        }
+
+        if data.customer&.id
+          request_data[:customerId] = data.customer.id
+        else
+          request_data[:customer] = {
+            name: data.customer&.metadata&.name,
+            email: data.customer&.metadata&.email,
+            cellphone: data.customer&.metadata&.cellphone,
+            taxId: data.customer&.metadata&.tax_id
+          }
+        end
+
+        response = request("POST", "create", json: request_data)
+        Resources::Billing.new(response)
+      end
+    end
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/clients/client.rb
+================================================
+# frozen_string_literal: true
+
+require "faraday"
+
+module AbacatePay
+  module Clients
+    # Client class for interacting with the AbacatePay API.
+    #
+    # This class handles API requests using Faraday and provides a way to manage
+    # authentication and communication with the AbacatePay service.
+    class Client
+      # @param uri [String] The specific API endpoint to interact with
+      # @param client [Faraday::Connection, nil] Optional Faraday client for custom configurations
+      def initialize(uri, client = nil)
+        @client = client || build_client(uri)
+      end
+
+      private
+
+      # Sends an HTTP request to the API
+      #
+      # @param method [String] The HTTP method (e.g., GET, POST)
+      # @param uri [String] The endpoint URI relative to the base URI
+      # @param options [Hash] Optional settings and parameters for the request
+      # @return [Hash] The response data
+      # @raise [ApiError] If an error occurs during the request
+      def request(method, uri, options = {})
+        response = @client.public_send(method.downcase) do |req|
+          req.url uri
+          req.body = options[:json].to_json if options[:json]
+        end
+
+        JSON.parse(response.body).fetch("data")
+      rescue Faraday::Error => e
+        handle_request_error(e)
+      rescue StandardError => e
+        raise ApiError, "Unexpected error: #{e.message}"
+      end
+
+      # Builds a new Faraday client with default configuration
+      #
+      # @param uri [String] The endpoint URI
+      # @return [Faraday::Connection] Configured Faraday client
+      def build_client(uri)
+        Faraday.new(
+          url: "#{AbacatePay.configuration.api_url}/#{uri}/",
+          headers: {
+            "Content-Type" => "application/json",
+            "Authorization" => "Bearer #{AbacatePay.configuration.api_token}"
+          }
+        )
+      end
+
+      # Handles API request errors
+      #
+      # @param error [Faraday::Error] The error to handle
+      # @raise [ApiError] With appropriate error message
+      def handle_request_error(error)
+        error_message = if error.response&.body
+          response_body = JSON.parse(error.response.body)
+          response_body["message"] || response_body["error"]
+        end
+
+        raise ApiError, "Request error: #{error_message || error.message}"
+      end
+    end
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/clients/customer_client.rb
+================================================
+# frozen_string_literal: true
+
+module AbacatePay
+  module Clients
+    # Client class for managing customer-related operations in the AbacatePay API.
+    class CustomerClient < Client
+      # API endpoint for customer-related operations
+      URI = "customer"
+
+      # @param client [Faraday::Connection, nil] Optional Faraday client for custom configurations
+      def initialize(client = nil)
+        super(URI, client)
+      end
+
+      # Retrieves a list of customers
+      #
+      # @return [Array<Resources::Customer>] Array of Customer objects
+      def list
+        response = request("GET", "list")
+        response.map { |data| Resources::Customer.new(data) }
+      end
+
+      # Creates a new customer
+      #
+      # @param data [Resources::Customer] The customer data to be sent for creation
+      # @return [Resources::Customer] The created Customer object
+      def create(data)
+        response = request("POST", "create", json: {
+          name: data.metadata&.name,
+          email: data.metadata&.email,
+          cellphone: data.metadata&.cellphone,
+          taxId: data.metadata&.tax_id
+        })
+
+        Resources::Customer.new(response)
+      end
+    end
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/enums/billing/frequencies.rb
+================================================
+# frozen_string_literal: true
+
+module AbacatePay
+  module Enums
+    module Billing
+      # Enumeration defining billing frequencies.
+      #
+      # This enumeration is used to categorize different payment or billing frequencies.
+      class Frequencies
+        # One-time billing.
+        # @return [String] Represents a billing that occurs only once
+        ONE_TIME = "ONE_TIME"
+
+        # Gets all valid frequency values
+        # @return [Array<String>] List of all valid frequencies
+        def self.values
+          [ONE_TIME]
+        end
+
+        # Validates if a given value is a valid frequency
+        # @param value [String] The value to validate
+        # @return [Boolean] true if valid, false otherwise
+        def self.valid?(value)
+          values.include?(value)
+        end
+
+        # Validates and returns the value if valid
+        # @param value [String] The value to validate
+        # @return [String] The validated value
+        # @raise [ArgumentError] if value is invalid
+        def self.validate!(value)
+          raise ArgumentError, "Invalid frequency: #{value}" unless valid?(value)
+          value
+        end
+      end
+    end
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/enums/billing/methods.rb
+================================================
+# frozen_string_literal: true
+
+module AbacatePay
+  module Enums
+    module Billing
+      # Enumeration defining billing methods.
+      #
+      # This enumeration is used to represent different payment methods available for billing.
+      class Methods
+        # PIX payment method.
+        # @return [String] Represents the PIX payment method, a popular instant payment system in Brazil
+        PIX = "PIX"
+
+        # Gets all valid method values
+        # @return [Array<String>] List of all valid payment methods
+        def self.values
+          [PIX]
+        end
+
+        # Validates if a given value is a valid method
+        # @param value [String] The value to validate
+        # @return [Boolean] true if valid, false otherwise
+        def self.valid?(value)
+          values.include?(value)
+        end
+
+        # Validates and returns the value if valid
+        # @param value [String] The value to validate
+        # @return [String] The validated value
+        # @raise [ArgumentError] if value is invalid
+        def self.validate!(value)
+          raise ArgumentError, "Invalid payment method: #{value}" unless valid?(value)
+          value
+        end
+      end
+    end
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/enums/billing/statuses.rb
+================================================
+# frozen_string_literal: true
+
+module AbacatePay
+  module Enums
+    module Billing
+      # Enumeration defining billing statuses.
+      #
+      # This enumeration is used to represent the various statuses that a billing process can have.
+      class Statuses
+        # Indicates that the billing is pending and has not yet been processed.
+        # @return [String]
+        PENDING = "PENDING"
+
+        # Indicates that the billing has expired and is no longer valid.
+        # @return [String]
+        EXPIRED = "EXPIRED"
+
+        # Indicates that the billing has been cancelled and will not be processed.
+        # @return [String]
+        CANCELLED = "CANCELLED"
+
+        # Indicates that the billing has been successfully paid.
+        # @return [String]
+        PAID = "PAID"
+
+        # Indicates that the billing has been refunded to the payer.
+        # @return [String]
+        REFUNDED = "REFUNDED"
+
+        # Gets all valid status values
+        # @return [Array<String>] List of all valid statuses
+        def self.values
+          [PENDING, EXPIRED, CANCELLED, PAID, REFUNDED]
+        end
+
+        # Validates if a given value is a valid status
+        # @param value [String] The value to validate
+        # @return [Boolean] true if valid, false otherwise
+        def self.valid?(value)
+          values.include?(value)
+        end
+
+        # Validates and returns the value if valid
+        # @param value [String] The value to validate
+        # @return [String] The validated value
+        # @raise [ArgumentError] if value is invalid
+        def self.validate!(value)
+          raise ArgumentError, "Invalid status: #{value}" unless valid?(value)
+          value
+        end
+      end
+    end
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/resources/billing.rb
+================================================
+# frozen_string_literal: true
+
+require "abacate_pay/resources/billing/metadata"
+require "abacate_pay/resources/billing/product"
+
+module AbacatePay
+  module Resources
+    # Represents a billing resource in the AbacatePay payment system.
+    #
+    # Manages billing-related data including payment methods, products, scheduling,
+    # and customer information for recurring and one-time payments.
+    class Billing < Resource
+      # Maps property names to their corresponding resource classes
+      RESOURCE_PROPERTIES = {
+        metadata: 'AbacatePay::Resources::Billing::Metadata',
+        customer: 'AbacatePay::Resources::Customer',
+        products: 'AbacatePay::Resources::Billing::Product'
+      }.freeze
+
+      # Maps property names to their corresponding enum classes
+      ENUM_PROPERTIES = {
+        status: 'AbacatePay::Enums::Billing::Statuses',
+        frequency: 'AbacatePay::Enums::Billing::Frequencies',
+        methods: 'AbacatePay::Enums::Billing::Methods'
+      }.freeze
+
+      # Properties that should be handled as DateTime objects
+      DATETIME_PROPERTIES = %w[
+        next_billing
+        created_at
+        updated_at
+      ].freeze
+
+      # Basic attributes
+      attr_reader :id, :account_id, :url, :dev_mode, :amount
+
+      # Complex attributes
+      attr_reader :methods, :products, :metadata, :customer
+
+      # Enum attributes
+      attr_reader :frequency, :status
+
+      # DateTime attributes
+      attr_reader :next_billing, :created_at, :updated_at
+
+      # Creates a new Billing instance
+      #
+      # @param data [Hash] The raw billing data
+      # @raise [ArgumentError] If the data is invalid
+      def initialize(data)
+        fill(data)
+      end
+
+      # Checks if billing is in development mode
+      #
+      # @return [Boolean, nil] True if in dev mode, false if not, or nil if not set
+      def dev_mode?
+        @dev_mode
+      end
+
+      private
+
+      # Process a value based on its property
+      #
+      # @param property [String] The property name
+      # @param value [Object] The value to process
+      # @return [Object] The processed value
+      def process_value(property, value)
+        return nil if value.nil?
+
+        if DATETIME_PROPERTIES.include?(property)
+          initialize_date_time(value)
+        elsif ENUM_PROPERTIES.key?(property.to_sym)
+          process_enum_value(property, value)
+        elsif RESOURCE_PROPERTIES.key?(property.to_sym)
+          process_resource_value(property, value)
+        else
+          value
+        end
+      end
+
+      # Process enum values
+      #
+      # @param property [String] The property name
+      # @param value [Object] The value to process
+      # @return [Object] The processed value
+      def process_enum_value(property, value)
+        enum_class = Object.const_get(ENUM_PROPERTIES[property.to_sym])
+        
+        if value.is_a?(Array)
+          value.map { |item| initialize_enum(enum_class, item) }
+        else
+          initialize_enum(enum_class, value)
+        end
+      end
+
+      # Process resource values
+      #
+      # @param property [String] The property name
+      # @param value [Object] The value to process
+      # @return [Object] The processed value
+      def process_resource_value(property, value)
+        resource_class = Object.const_get(RESOURCE_PROPERTIES[property.to_sym])
+        
+        if property.to_s == 'products' && value.is_a?(Array)
+          value.map { |item| initialize_resource(resource_class, item) }
+        else
+          initialize_resource(resource_class, value)
+        end
+      end
+
+      protected
+
+      # @!visibility private
+      attr_writer :id, :account_id, :url, :methods, :products,
+                 :dev_mode, :amount, :metadata, :frequency, :status,
+                 :customer, :next_billing, :created_at, :updated_at
+    end
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/resources/customer.rb
+================================================
+# frozen_string_literal: true
+
+require "abacate_pay/resources/customer/metadata"
+
+module AbacatePay
+  module Resources
+    # Represents a customer resource in the AbacatePay payment system.
+    #
+    # This class handles customer data including identification and metadata,
+    # providing a structured way to manage customer information within the system.
+    class Customer < Resource
+      # Maps property names to their corresponding resource classes
+      RESOURCE_PROPERTIES = {
+        metadata: 'AbacatePay::Resources::Customer::Metadata'
+      }.freeze
+
+      # @return [String, nil] The unique identifier for the customer
+      attr_reader :id
+
+      # @return [Metadata, nil] Additional customer information
+      attr_reader :metadata
+
+      # Creates a new Customer instance
+      #
+      # @param data [Hash] The raw customer data
+      # @raise [ArgumentError] If the data is invalid
+      def initialize(data)
+        fill(data)
+      end
+
+      private
+
+      # Process a value based on its property
+      #
+      # @param property [String] The property name
+      # @param value [Object] The value to process
+      # @return [Object] The processed value
+      def process_value(property, value)
+        return nil if value.nil?
+
+        if RESOURCE_PROPERTIES.key?(property.to_sym)
+          initialize_resource(
+            Object.const_get(RESOURCE_PROPERTIES[property.to_sym]),
+            value
+          )
+        else
+          value
+        end
+      end
+
+      protected
+
+      # @!visibility private
+      attr_writer :id, :metadata
+    end
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/resources/resource.rb
+================================================
+# frozen_string_literal: true
+
+module AbacatePay
+  module Resources
+    # Base class for resources in the AbacatePay system.
+    class Resource
+      private
+
+      # Initialize a DateTime object from a string or DateTime
+      #
+      # @param value [String, DateTime] The value to initialize
+      # @return [DateTime, nil] The initialized DateTime object or nil
+      # @raise [ArgumentError] If the value is invalid
+      def initialize_date_time(value)
+        return nil if value.nil? || value.empty?
+        return value.clone if value.is_a?(DateTime)
+
+        DateTime.parse(value)
+      rescue Date::Error
+        raise ArgumentError, "Invalid datetime value: #{value}"
+      end
+
+      # Initialize an enum from a string or enum object
+      #
+      # @param enum_class [Class] The enum class to initialize
+      # @param value [String, Object] The value to initialize
+      # @return [Object, nil] The initialized enum or nil
+      # @raise [ArgumentError] If the value is invalid
+      def initialize_enum(enum_class, value)
+        return nil if value.nil? || value.empty?
+        
+        enum_class.validate!(value)
+      end
+
+      # Initialize a resource from a hash or resource object
+      #
+      # @param resource_class [Class] The resource class to initialize
+      # @param value [Hash, Object] The value to initialize
+      # @return [Object, nil] The initialized resource or nil
+      # @raise [ArgumentError] If the value is invalid
+      def initialize_resource(resource_class, value)
+        return nil if value.nil? || value.empty?
+        return value.clone if value.is_a?(resource_class)
+
+        unless value.is_a?(Hash)
+          raise ArgumentError, "Invalid resource value. Expected Hash or #{resource_class}, got #{value.class}"
+        end
+
+        resource_class.new(value)
+      end
+
+      # Fill the object with data
+      #
+      # @param data [Hash] The data to fill with
+      # @return [void]
+      def fill(data)
+        data.each do |key, value|
+          property = camel_to_snake(key)
+          next unless respond_to?("#{property}=", true)
+          
+          send("#{property}=", process_value(property, value))
+        end
+      end
+
+      # Convert camelCase to snake_case
+      #
+      # @param str [String] The string to convert
+      # @return [String] The converted string
+      def camel_to_snake(str)
+        str.to_s
+           .gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
+           .gsub(/([a-z\d])([A-Z])/, '\1_\2')
+           .downcase
+      end
+
+      # Convert snake_case to camelCase
+      #
+      # @param str [String] The string to convert
+      # @return [String] The converted string
+      def snake_to_camel(str)
+        str.split('_')
+           .map.with_index { |word, i| i.zero? ? word : word.capitalize }
+           .join
+      end
+
+      protected
+
+      # Convert the resource to a hash
+      #
+      # @return [Hash] The hash representation
+      def to_hash
+        instance_variables.each_with_object({}) do |var, hash|
+          next if var.to_s.start_with?('@__')
+          
+          value = instance_variable_get(var)
+          key = snake_to_camel(var.to_s.delete('@'))
+          
+          hash[key] = case value
+                     when DateTime
+                       value.iso8601
+                     when Resource
+                       value.to_hash
+                     when Module
+                       value.respond_to?(:value) ? value.value : value
+                     when Array
+                       value.map { |v| v.respond_to?(:to_hash) ? v.to_hash : v }
+                     else
+                       value
+                     end
+        end.compact
+      end
+    end
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/resources/billing/metadata.rb
+================================================
+# frozen_string_literal: true
+
+module AbacatePay
+  module Resources
+    module Billing
+      # Represents metadata for a billing resource in the AbacatePay system.
+      #
+      # This class contains additional information related to a billing resource,
+      # such as fee, return URL, and completion URL.
+      class Metadata < Resource
+        # @return [Integer, nil] Fee associated with the billing
+        attr_accessor :fee
+
+        # @return [String, nil] URL to redirect the user after payment is canceled or abandoned
+        attr_accessor :return_url
+
+        # @return [String, nil] URL to redirect the user after successful payment
+        attr_accessor :completion_url
+
+        # Creates a new Metadata instance
+        #
+        # @param data [Hash] The metadata properties
+        def initialize(data)
+          fill(data)
+        end
+
+        protected
+
+        def to_hash
+          super
+        end
+      end
+    end
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/resources/billing/product.rb
+================================================
+# frozen_string_literal: true
+
+module AbacatePay
+  module Resources
+    module Billing
+      # Represents a product in a billing resource in the AbacatePay system.
+      #
+      # This class contains information about a product, such as its identifier,
+      # name, description, quantity, and price.
+      class Product < Resource
+        # @return [String, nil] External identifier for the product
+        attr_accessor :external_id
+
+        # @return [String, nil] Internal identifier for the product in the system
+        attr_accessor :product_id
+
+        # @return [String, nil] Name of the product
+        attr_accessor :name
+
+        # @return [String, nil] Description of the product
+        attr_accessor :description
+
+        # @return [Integer, nil] Quantity of the product
+        attr_accessor :quantity
+
+        # @return [Integer, nil] Price of the product in smallest currency unit (e.g., cents)
+        attr_accessor :price
+
+        # Creates a new Product instance
+        #
+        # @param data [Hash] The product properties
+        def initialize(data)
+          fill(data)
+        end
+
+        protected
+
+        def to_hash
+          super
+        end
+      end
+    end
+  end
+end
+
+
+================================================
+FILE: lib/abacatepay/resources/customer/metadata.rb
+================================================
+# frozen_string_literal: true
+
+module AbacatePay
+  module Resources
+    module Customer
+      # Represents metadata for a customer in the AbacatePay system.
+      #
+      # This class contains additional information about a customer, such as their name,
+      # contact details, and tax identification number.
+      class Metadata < Resource
+        # @return [String, nil] Customer's name
+        attr_accessor :name
+
+        # @return [String, nil] Customer's cellphone number
+        attr_accessor :cellphone
+
+        # @return [String, nil] Customer's email address
+        attr_accessor :email
+
+        # @return [String, nil] Customer's tax identification number
+        attr_accessor :tax_id
+
+        # Creates a new Metadata instance
+        #
+        # @param data [Hash] The metadata properties
+        def initialize(data)
+          fill(data)
+        end
+
+        protected
+
+        def to_hash
+          super
+        end
+      end
+    end
+  end
+end
+
+
+================================================
+FILE: sig/abacatepay/rails.rbs
+================================================
+module Abacatepay
+  module Rails
+    VERSION: String
+    # See the writing guide of rbs: https://github.com/ruby/rbs#guides
+  end
+end
+
+
+
+================================================
+FILE: spec/clients/billing_client_spec.rb
+================================================
+
+
+
+================================================
+FILE: spec/clients/client_spec.rb
+================================================
+
+
+
+================================================
+FILE: spec/clients/customer_client_spec.rb
+================================================
+
+
+
+================================================
+FILE: spec/enums/billing/frequencies_spec.rb
+================================================
+
+
+
+================================================
+FILE: spec/enums/billing/methods_spec.rb
+================================================
+
+
+
+================================================
+FILE: spec/enums/billing/statuses_spec.rb
+================================================
+
+
+
+================================================
+FILE: spec/resources/billing_spec.rb
+================================================
+
+
+
+================================================
+FILE: spec/resources/customer_spec.rb
+================================================
+
+
+
+================================================
+FILE: spec/resources/resource_spec.rb
+================================================
+
+
+
+================================================
+FILE: spec/resources/billing/metadata_spec.rb
+================================================
+
+
+
+================================================
+FILE: spec/resources/billing/product_spec.rb
+================================================
+
+
+
+================================================
+FILE: spec/resources/customer/metadata_spec.rb
+================================================
+
+

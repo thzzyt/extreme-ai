@@ -1,0 +1,418 @@
+Directory structure:
+└── abacatepay-abacatepay-rust-sdk/
+    ├── Readme.md
+    ├── Cargo.toml
+    └── src/
+        ├── client.rs
+        ├── error.rs
+        ├── lib.rs
+        └── models.rs
+
+================================================
+FILE: Readme.md
+================================================
+#### example:
+```rust
+use abacatepay_rust_sdk::{
+    AbacatePay, BillingKind, BillingMethods, CreateBillingData, CreateBillingProduct,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = AbacatePay::new("api_key".to_string());
+
+    // Create a billing
+    let billing_data = CreateBillingData {
+        frequency: BillingKind::OneTime,
+        methods: vec![BillingMethods::Pix],
+        products: vec![CreateBillingProduct {
+            external_id: "123".to_string(),
+            name: "Product".to_string(),
+            quantity: 1,
+            price: 100.0,
+            description: Some("Description".to_string()),
+        }],
+        return_url: "http://localhost:3000/".to_string(),
+        completion_url: "http://localhost:3000/".to_string(),
+        customer_id: None,
+    };
+
+    let billing = client.create_billing(billing_data).await?;
+    println!("Created billing: {:?}", billing);
+
+    // List billings
+    let billings = client.list_billings().await?;
+    println!("All billings: {:?}", billings);
+
+    Ok(())
+}
+```
+
+
+
+================================================
+FILE: Cargo.toml
+================================================
+[package]
+name = "abacatepay-rust-sdk"
+version = "0.1.1"
+edition = "2021"
+authors = ["Jose Miguel Araujo Silva <miguelpintojose00@gmail.com>"]
+description = "Official Rust SDK for AbacatePay API"
+license = "MIT"
+repository = "https://github.com/m1guer/abacate-pay-sdk"
+documentation = "https://docs.rs/abacate-pay-sdk"
+readme = "Readme.md"
+keywords = ["payment", "sdk", "api","gateway"]
+categories = ["api-bindings","gateway"]
+
+[dependencies]
+reqwest = { version = "0.12.9", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+async-trait = "0.1"
+thiserror = "2.0.3"
+tokio = { version = "1.41.1", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+tokio = { version = "1.41.1", features = ["full"] }
+
+
+
+================================================
+FILE: src/client.rs
+================================================
+use crate::error::AbacatePayError;
+use crate::models::*;
+use reqwest::{Client, StatusCode};
+use serde::Deserialize;
+use tracing::{debug, error, instrument};
+
+#[derive(Debug, Deserialize)]
+struct ErrorResponse {
+    error: String,
+}
+
+pub struct AbacatePay {
+    client: Client,
+    api_key: String,
+    base_url: String,
+}
+
+impl AbacatePay {
+    pub fn new(api_key: String) -> Self {
+        Self {
+            client: Client::new(),
+            api_key,
+            base_url: "https://api.abacatepay.com/v1".to_string(),
+        }
+    }
+
+    async fn handle_response<T>(&self, response: reqwest::Response) -> Result<T, AbacatePayError>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        let status = response.status();
+        let response_text = response.text().await?;
+
+        debug!(
+            status = status.as_u16(),
+            response = response_text.as_str(),
+            "Received response"
+        );
+
+        // If it's an error status code, try to parse the error message
+        if !status.is_success() {
+            if let Ok(error_response) = serde_json::from_str::<ErrorResponse>(&response_text) {
+                error!(
+                    status = status.as_u16(),
+                    error = error_response.error.as_str(),
+                    "API error response"
+                );
+                return Err(AbacatePayError::ApiError {
+                    status,
+                    message: error_response.error,
+                });
+            }
+
+            return Err(AbacatePayError::UnexpectedResponse {
+                status,
+                response: response_text,
+            });
+        }
+
+        match serde_json::from_str::<T>(&response_text) {
+            Ok(parsed) => Ok(parsed),
+            Err(e) => {
+                error!(
+                    error = ?e,
+                    response = response_text.as_str(),
+                    "Failed to parse API response"
+                );
+                Err(AbacatePayError::ParseError {
+                    message: e.to_string(),
+                    response: response_text,
+                })
+            }
+        }
+    }
+
+    #[instrument(skip(self, data))]
+    pub async fn create_billing(
+        &self,
+        data: CreateBillingData,
+    ) -> Result<Billing, AbacatePayError> {
+        let url = format!("{}/billing/create", self.base_url);
+
+        debug!(
+            url = url.as_str(),
+            request_data = ?data,
+            "Sending create billing request"
+        );
+
+        let response = self
+            .client
+            .post(&url)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header(
+                "User-Agent",
+                format!("Rust SDK {}", env!("CARGO_PKG_VERSION")),
+            )
+            .json(&data)
+            .send()
+            .await?;
+
+        let result: CreateBillingResponse = self.handle_response(response).await?;
+
+        match result {
+            CreateBillingResponse::Success { billing, .. } => {
+                debug!(billing_id = ?billing._id, "Successfully created billing");
+                Ok(billing)
+            }
+            CreateBillingResponse::Error { error } => {
+                error!(
+                    error = error.as_str(),
+                    "API returned error in response body"
+                );
+                Err(AbacatePayError::ApiError {
+                    status: StatusCode::OK,
+                    message: error,
+                })
+            }
+        }
+    }
+
+    #[instrument(skip(self))]
+    pub async fn list_billings(&self) -> Result<Vec<Billing>, AbacatePayError> {
+        let url = format!("{}/billing/list", self.base_url);
+
+        debug!(url = url.as_str(), "Sending list billings request");
+
+        let response = self
+            .client
+            .get(&url)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header(
+                "User-Agent",
+                format!("Rust SDK {}", env!("CARGO_PKG_VERSION")),
+            )
+            .send()
+            .await?;
+
+        let result: ListBillingResponse = self.handle_response(response).await?;
+
+        match result {
+            ListBillingResponse::Success { billings, .. } => {
+                debug!(
+                    billing_count = billings.len(),
+                    "Successfully retrieved billings"
+                );
+                Ok(billings)
+            }
+            ListBillingResponse::Error { error } => {
+                error!(
+                    error = error.as_str(),
+                    "API returned error in response body"
+                );
+                Err(AbacatePayError::ApiError {
+                    status: StatusCode::OK,
+                    message: error,
+                })
+            }
+        }
+    }
+}
+
+
+
+================================================
+FILE: src/error.rs
+================================================
+use reqwest::StatusCode;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum AbacatePayError {
+    #[error("HTTP request failed: {0}")]
+    RequestError(#[from] reqwest::Error),
+
+    #[error("API error ({status}): {message}")]
+    ApiError { status: StatusCode, message: String },
+
+    #[error("Failed to parse API response: {message}. Response: {response}")]
+    ParseError { message: String, response: String },
+
+    #[error("Unexpected response ({status}): {response}")]
+    UnexpectedResponse {
+        status: StatusCode,
+        response: String,
+    },
+}
+
+
+
+================================================
+FILE: src/lib.rs
+================================================
+mod client;
+mod error;
+mod models;
+
+pub use client::AbacatePay;
+pub use error::AbacatePayError;
+pub use models::*;
+
+
+
+================================================
+FILE: src/models.rs
+================================================
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
+pub enum BillingStatus {
+    PENDING,
+    EXPIRED,
+    CANCELLED,
+    PAID,
+    REFUNDED,
+}
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
+pub enum BillingMethods {
+    PIX,
+}
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
+pub enum BillingKind {
+    ONE_TIME,
+}
+#[derive(Debug, Deserialize, Clone)]
+pub struct Metadata {
+    pub fee: i64,
+    #[serde(rename = "returnUrl")]
+    pub return_url: String,
+    #[serde(rename = "completionUrl")]
+    pub completion_url: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Product {
+    #[serde(rename = "productId")]
+    pub product_id: String,
+    pub quantity: i64,
+}
+#[derive(Debug, Deserialize, Clone)]
+pub struct CustomerMetadata {
+    pub name: String,
+    pub cellphone: String,
+    #[serde(rename = "taxId")]
+    pub tax_id: String,
+    pub email: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct CustomerId {
+    pub metadata: CustomerMetadata,
+    pub _id: String,
+    #[serde(rename = "publicId")]
+    pub public_id: String,
+    #[serde(rename = "storeId")]
+    pub store_id: String,
+    #[serde(rename = "devMode")]
+    pub dev_mode: bool,
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime<Utc>,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: DateTime<Utc>,
+    pub __v: i64,
+}
+#[derive(Debug, Deserialize, Clone)]
+pub struct Customer {
+    pub _id: String,
+    pub metadata: CustomerMetadata,
+}
+#[derive(Debug, Deserialize, Clone)]
+pub struct Billing {
+    pub metadata: Metadata,
+    pub _id: String,
+    #[serde(rename = "publicId")]
+    pub public_id: String,
+    pub products: Vec<Product>,
+    pub amount: i64,
+    pub status: BillingStatus,
+    #[serde(rename = "devMode")]
+    pub dev_mode: bool,
+    pub methods: Vec<BillingMethods>,
+    pub frequency: BillingKind,
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime<Utc>,
+    #[serde(rename = "updatedAt")]
+    pub update_at: DateTime<Utc>,
+    pub __v: i64,
+    pub url: String,
+    pub id: String,
+    #[serde(rename = "customerId")]
+    pub customer_id: Option<CustomerId>,
+    pub customer: Option<Customer>,
+}
+#[derive(Debug, Deserialize, Clone, Serialize)]
+pub struct CreateBillingProduct {
+    #[serde(rename = "externalId")]
+    pub external_id: String,
+    pub name: String,
+    pub quantity: i64,
+    pub price: f64,
+    pub description: Option<String>,
+}
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct CreateBillingData {
+    frequency: BillingKind,
+    methods: Vec<BillingMethods>,
+    products: Vec<CreateBillingProduct>,
+    #[serde(rename = "returnUrl")]
+    return_url: String,
+    #[serde(rename = "completionUrl")]
+    completion_url: String,
+}
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum CreateBillingResponse {
+    Success { error: Option<()>, billing: Billing },
+    Error { error: String },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum ListBillingResponse {
+    Success {
+        error: Option<()>,
+        billings: Vec<Billing>,
+    },
+    Error {
+        error: String,
+    },
+}
+
+
